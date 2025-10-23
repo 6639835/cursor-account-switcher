@@ -1,6 +1,6 @@
 [package]
 name = "cursor-switcher"
-version = "1.0.7"
+version = "1.0.8"
 description = "Cursor Account Switcher Tool"
 authors = ["Cursor Account Switcher Team"]
 license = "GPL-3.0"
