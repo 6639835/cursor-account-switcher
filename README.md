@@ -2,7 +2,7 @@
 
 A high-performance, cross-platform desktop application for managing and switching between multiple Cursor AI accounts. Built with **Tauri**, **Rust**, and **React**.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)
 

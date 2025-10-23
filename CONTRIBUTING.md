@@ -35,7 +35,7 @@ Thank you for your interest in contributing! This document provides guidelines a
 
 ```bash
 # Fork the repository on GitHub, then:
-git clone https://github.com/YOUR_USERNAME/cursor-account-switcher.git
+git clone https://github.com/6639835/cursor-account-switcher.git
 cd cursor-account-switcher
 
 # Add upstream remote
@@ -283,9 +283,9 @@ cursor-account-switcher/
 
 ## Getting Help
 
-- **Questions?** Open a [Discussion](https://github.com/OWNER/cursor-account-switcher/discussions)
-- **Found a bug?** Open an [Issue](https://github.com/OWNER/cursor-account-switcher/issues/new?template=bug_report.md)
-- **Want a feature?** Open a [Feature Request](https://github.com/OWNER/cursor-account-switcher/issues/new?template=feature_request.md)
+- **Questions?** Open a [Discussion](https://github.com/6639835/cursor-account-switcher/discussions)
+- **Found a bug?** Open an [Issue](https://github.com/6639835/cursor-account-switcher/issues/new?template=bug_report.md)
+- **Want a feature?** Open a [Feature Request](https://github.com/6639835/cursor-account-switcher/issues/new?template=feature_request.md)
 
 ## Resources
 
