@@ -1,7 +1,7 @@
 {
   "name": "cursor-switcher-tauri",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "license": "GPL-3.0",
   "scripts": {
