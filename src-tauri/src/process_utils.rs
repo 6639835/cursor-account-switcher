@@ -8,7 +8,7 @@ impl ProcessManager {
     pub fn kill_cursor() -> Result<()> {
         // Kill Cursor.exe process on Windows
         let output = Command::new("taskkill")
-            .args(&["/F", "/IM", "Cursor.exe"])
+            .args(["/F", "/IM", "Cursor.exe"])
             .output();
 
         match output {
