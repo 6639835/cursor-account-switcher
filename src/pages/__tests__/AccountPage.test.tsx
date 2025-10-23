@@ -59,21 +59,17 @@ describe('AccountPage Component', () => {
       expect(screen.getByText('test@example.com')).toBeInTheDocument();
     });
 
-    const deleteButton = screen
-      .getAllByRole('button')
-      .find((btn) => btn.querySelector('svg')?.getAttribute('class')?.includes('lucide'));
+    // Find delete button by title attribute
+    const deleteButton = screen.getByTitle('Delete account');
+    await user.click(deleteButton);
 
-    if (deleteButton) {
-      await user.click(deleteButton);
+    expect(window.confirm).toHaveBeenCalled();
 
-      expect(window.confirm).toHaveBeenCalled();
-
-      await waitFor(() => {
-        expect(global.mockInvoke).toHaveBeenCalledWith('delete_account', {
-          email: 'test@example.com',
-        });
+    await waitFor(() => {
+      expect(global.mockInvoke).toHaveBeenCalledWith('delete_account', {
+        email: 'test@example.com',
       });
-    }
+    });
   });
 
   it('should not delete account if user cancels', async () => {
@@ -204,14 +200,18 @@ describe('AccountPage Component', () => {
 
     render(<AccountPage />);
 
-    const importButton = screen.getByRole('button', { name: /import/i });
+    // Click the "Import" button to show the import modal
+    const importButton = screen.getAllByRole('button', { name: /import/i })[0];
     await user.click(importButton);
 
+    // Fill in the textarea
     const textarea = screen.getByRole('textbox');
+    await user.clear(textarea);
     await user.type(textarea, importText);
 
-    const confirmButton = screen.getByRole('button', { name: /confirm/i });
-    await user.click(confirmButton);
+    // Click the "Import" button inside the modal (not "Confirm")
+    const submitButton = screen.getAllByRole('button', { name: /import/i })[1];
+    await user.click(submitButton);
 
     await waitFor(() => {
       expect(global.mockInvoke).toHaveBeenCalledWith('import_accounts', { text: importText });

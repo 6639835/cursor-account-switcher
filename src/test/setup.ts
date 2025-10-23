@@ -14,11 +14,11 @@ vi.mock('@tauri-apps/api/tauri', () => ({
   invoke: mockInvoke,
 }));
 
-// Make mockInvoke available globally for tests
-(globalThis as any).mockInvoke = mockInvoke;
-
 // Type declaration for global mockInvoke
 declare global {
   // eslint-disable-next-line no-var
   var mockInvoke: ReturnType<typeof vi.fn>;
 }
+
+// Make mockInvoke available globally for tests
+(globalThis as typeof global).mockInvoke = mockInvoke;
