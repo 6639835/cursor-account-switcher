@@ -115,7 +115,47 @@ npm run tauri build      # Build complete app
 
 # Preview
 npm run preview          # Preview production build
+
+# Testing
+npm test                 # Run all tests (frontend + backend)
+npm run test:frontend    # Run frontend tests
+npm run test:backend     # Run backend tests
+
+# Linting & Formatting
+npm run lint             # Lint all code
+npm run format           # Format all code
 ```
+
+## 🧪 Testing
+
+This project includes comprehensive test coverage for both frontend and backend.
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run frontend tests only
+npm run test:frontend
+
+# Run backend tests only  
+npm run test:backend
+
+# Run frontend tests in watch mode
+npm run test:frontend:watch
+
+# Run tests with coverage
+npm run test:frontend:coverage
+```
+
+### Test Coverage
+
+- ✅ **Frontend**: Component tests, integration tests, type tests
+- ✅ **Backend**: Unit tests for all modules, integration tests
+- ✅ **E2E**: Cross-module workflow tests
+
+For detailed testing documentation, see [TESTING.md](TESTING.md).
 
 ## 📋 Usage
 

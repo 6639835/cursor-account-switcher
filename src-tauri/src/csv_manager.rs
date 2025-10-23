@@ -198,3 +198,192 @@ impl CsvManager {
         anyhow::bail!("Field '{}' not found", field_name)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    fn create_test_manager() -> (CsvManager, tempfile::TempDir) {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let csv_path = temp_dir.path().join("test.csv");
+        let manager = CsvManager::new(csv_path);
+        (manager, temp_dir)
+    }
+
+    #[test]
+    fn test_ensure_csv_exists_creates_file() {
+        let (manager, _temp_dir) = create_test_manager();
+
+        assert!(!manager.file_path.exists());
+        manager.ensure_csv_exists().unwrap();
+        assert!(manager.file_path.exists());
+    }
+
+    #[test]
+    fn test_write_and_read_accounts() {
+        let (manager, _temp_dir) = create_test_manager();
+        manager.ensure_csv_exists().unwrap();
+
+        let accounts = vec![
+            Account {
+                index: 1,
+                email: "test1@example.com".to_string(),
+                access_token: "token1".to_string(),
+                refresh_token: "refresh1".to_string(),
+                cookie: "cookie1".to_string(),
+                days_remaining: "30".to_string(),
+                status: "premium".to_string(),
+                record_time: "2024-01-01".to_string(),
+            },
+            Account {
+                index: 2,
+                email: "test2@example.com".to_string(),
+                access_token: "token2".to_string(),
+                refresh_token: "refresh2".to_string(),
+                cookie: "cookie2".to_string(),
+                days_remaining: "15".to_string(),
+                status: "free".to_string(),
+                record_time: "2024-01-02".to_string(),
+            },
+        ];
+
+        manager.write_accounts(&accounts).unwrap();
+        let read_accounts = manager.read_accounts().unwrap();
+
+        assert_eq!(read_accounts.len(), 2);
+        assert_eq!(read_accounts[0].email, "test1@example.com");
+        assert_eq!(read_accounts[1].email, "test2@example.com");
+    }
+
+    #[test]
+    fn test_add_account() {
+        let (manager, _temp_dir) = create_test_manager();
+        manager.ensure_csv_exists().unwrap();
+
+        let account = Account {
+            index: 0, // Should be auto-incremented
+            email: "new@example.com".to_string(),
+            access_token: "token".to_string(),
+            refresh_token: "refresh".to_string(),
+            cookie: "cookie".to_string(),
+            days_remaining: "30".to_string(),
+            status: "premium".to_string(),
+            record_time: "2024-01-01".to_string(),
+        };
+
+        manager.add_account(account).unwrap();
+        let accounts = manager.read_accounts().unwrap();
+
+        assert_eq!(accounts.len(), 1);
+        assert_eq!(accounts[0].index, 1);
+        assert_eq!(accounts[0].email, "new@example.com");
+    }
+
+    #[test]
+    fn test_delete_account() {
+        let (manager, _temp_dir) = create_test_manager();
+        manager.ensure_csv_exists().unwrap();
+
+        let account = Account {
+            index: 1,
+            email: "delete@example.com".to_string(),
+            access_token: "token".to_string(),
+            refresh_token: "refresh".to_string(),
+            cookie: "cookie".to_string(),
+            days_remaining: "30".to_string(),
+            status: "premium".to_string(),
+            record_time: "2024-01-01".to_string(),
+        };
+
+        manager.add_account(account).unwrap();
+        assert_eq!(manager.read_accounts().unwrap().len(), 1);
+
+        let deleted = manager.delete_account("delete@example.com").unwrap();
+        assert!(deleted);
+        assert_eq!(manager.read_accounts().unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_delete_nonexistent_account() {
+        let (manager, _temp_dir) = create_test_manager();
+        manager.ensure_csv_exists().unwrap();
+
+        let deleted = manager.delete_account("nonexistent@example.com").unwrap();
+        assert!(!deleted);
+    }
+
+    #[test]
+    fn test_update_account() {
+        let (manager, _temp_dir) = create_test_manager();
+        manager.ensure_csv_exists().unwrap();
+
+        let account = Account {
+            index: 1,
+            email: "update@example.com".to_string(),
+            access_token: "old_token".to_string(),
+            refresh_token: "refresh".to_string(),
+            cookie: "cookie".to_string(),
+            days_remaining: "30".to_string(),
+            status: "premium".to_string(),
+            record_time: "2024-01-01".to_string(),
+        };
+
+        manager.add_account(account).unwrap();
+
+        let updated_account = Account {
+            index: 1,
+            email: "update@example.com".to_string(),
+            access_token: "new_token".to_string(),
+            refresh_token: "refresh".to_string(),
+            cookie: "cookie".to_string(),
+            days_remaining: "45".to_string(),
+            status: "ultra".to_string(),
+            record_time: "2024-01-02".to_string(),
+        };
+
+        let updated = manager
+            .update_account("update@example.com", updated_account)
+            .unwrap();
+        assert!(updated);
+
+        let accounts = manager.read_accounts().unwrap();
+        assert_eq!(accounts[0].access_token, "new_token");
+        assert_eq!(accounts[0].days_remaining, "45");
+    }
+
+    #[test]
+    fn test_parse_import_text() {
+        let (manager, _temp_dir) = create_test_manager();
+
+        let import_text = "【email: user1@example.com】【password:】【accessToken: token1】【sessionToken: session1】\n【email: user2@example.com】【password:】【accessToken: token2】【sessionToken: session2】";
+
+        let accounts = manager.parse_import_text(import_text).unwrap();
+        assert_eq!(accounts.len(), 2);
+        assert_eq!(accounts[0].email, "user1@example.com");
+        assert_eq!(accounts[1].email, "user2@example.com");
+    }
+
+    #[test]
+    fn test_extract_field() {
+        let (manager, _temp_dir) = create_test_manager();
+
+        let text = "【email: test@example.com】【accessToken: mytoken】";
+
+        let email = manager.extract_field(text, "email").unwrap();
+        assert_eq!(email, "test@example.com");
+
+        let token = manager.extract_field(text, "accessToken").unwrap();
+        assert_eq!(token, "mytoken");
+    }
+
+    #[test]
+    fn test_extract_field_not_found() {
+        let (manager, _temp_dir) = create_test_manager();
+
+        let text = "【email: test@example.com】";
+        let result = manager.extract_field(text, "accessToken");
+
+        assert!(result.is_err());
+    }
+}

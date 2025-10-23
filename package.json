@@ -1,7 +1,7 @@
 {
   "name": "cursor-switcher-tauri",
   "private": true,
-  "version": "1.0.5",
+  "version": "1.0.6",
   "type": "module",
   "license": "GPL-3.0",
   "scripts": {
@@ -11,6 +11,13 @@
     "tauri": "tauri",
     "sync-version": "node scripts/sync-version.js",
     "version": "npm run sync-version && git add -A",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "vitest run",
+    "test:frontend:watch": "vitest",
+    "test:frontend:ui": "vitest --ui",
+    "test:frontend:coverage": "vitest run --coverage",
+    "test:backend": "cd src-tauri && cargo test",
+    "test:backend:verbose": "cd src-tauri && cargo test -- --nocapture",
     "lint": "npm run lint:ts && npm run lint:rust",
     "lint:ts": "eslint src --ext .ts,.tsx --report-unused-disable-directives --max-warnings 0",
     "lint:rust": "cd src-tauri && cargo clippy -- -D warnings",
@@ -29,20 +36,26 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^1.5.9",
+    "@testing-library/jest-dom": "^6.1.5",
+    "@testing-library/react": "^14.1.2",
+    "@testing-library/user-event": "^14.5.1",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/ui": "^1.1.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "jsdom": "^23.0.1",
     "postcss": "^8.4.33",
     "prettier": "^3.2.4",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3",
-    "vite": "^5.0.11"
+    "vite": "^5.0.11",
+    "vitest": "^1.1.0"
   }
 }
 
