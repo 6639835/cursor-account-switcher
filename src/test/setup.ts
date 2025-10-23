@@ -1,4 +1,4 @@
-import { expect, afterEach, vi } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 
@@ -15,9 +15,10 @@ vi.mock('@tauri-apps/api/tauri', () => ({
 }));
 
 // Make mockInvoke available globally for tests
-global.mockInvoke = mockInvoke;
+(globalThis as any).mockInvoke = mockInvoke;
 
-// Extend expect with custom matchers
+// Type declaration for global mockInvoke
 declare global {
-  var mockInvoke: typeof mockInvoke;
+  // eslint-disable-next-line no-var
+  var mockInvoke: ReturnType<typeof vi.fn>;
 }
