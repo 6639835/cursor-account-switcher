@@ -1,7 +1,7 @@
 {
   "name": "cursor-switcher-tauri",
   "private": true,
-  "version": "1.0.9",
+  "version": "1.1.0",
   "type": "module",
   "license": "GPL-3.0",
   "scripts": {
@@ -29,11 +29,11 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^1.5.3",
+    "date-fns": "^3.0.6",
+    "lucide-react": "^0.303.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.21.1",
-    "lucide-react": "^0.303.0",
-    "date-fns": "^3.0.6"
+    "react-router-dom": "^6.21.1"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^1.5.9",
@@ -45,6 +45,7 @@
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-v8": "^1.6.1",
     "@vitest/ui": "^1.1.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
@@ -59,4 +60,3 @@
     "vitest": "^1.1.0"
   }
 }
-
