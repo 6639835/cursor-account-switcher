@@ -74,7 +74,11 @@ function HomePage({ accountInfo, usageInfo, loading, error, onRefresh }: HomePag
               <div>
                 <p className="text-sm text-gray-500">Days Remaining</p>
                 <p className="font-medium text-gray-800">
-                  {accountInfo.days_remaining.toFixed(1)} days
+                  {accountInfo.days_remaining < 0 ? (
+                    <span className="text-gray-400 italic">—</span>
+                  ) : (
+                    `${accountInfo.days_remaining.toFixed(1)} days`
+                  )}
                 </p>
               </div>
             </div>

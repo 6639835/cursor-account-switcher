@@ -147,14 +147,18 @@ function AccountPage() {
       {showImport && (
         <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Import Accounts</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Format: 【email: xxx】【password:】【accessToken: xxx】【sessionToken: xxx】
+          <p className="text-sm text-gray-600 mb-2">
+            Format:{' '}
+            <code className="bg-gray-100 px-2 py-1 rounded">email,accessToken,sessionToken</code>
+          </p>
+          <p className="text-xs text-gray-500 mb-4">
+            Enter one account per line. SessionToken is optional.
           </p>
           <textarea
             value={importText}
             onChange={(e) => setImportText(e.target.value)}
-            placeholder="Paste account information here (one per line)"
-            className="w-full h-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="user@example.com,eyJhbGc...,WorkosCursorSessionToken=...&#10;user2@example.com,eyJhbGc..."
+            className="w-full h-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
           />
           <div className="flex gap-2 mt-4">
             <button
@@ -220,7 +224,11 @@ function AccountPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {account.days_remaining}
+                    {account.days_remaining === 'N/A' || account.days_remaining === '-1.0' ? (
+                      <span className="text-gray-400 italic">—</span>
+                    ) : (
+                      account.days_remaining
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {account.record_time}

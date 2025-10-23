@@ -188,8 +188,7 @@ describe('AccountPage Component', () => {
 
   it('should handle import accounts', async () => {
     const user = userEvent.setup();
-    const importText =
-      '【email: test@example.com】【password:】【accessToken: token123】【sessionToken: session123】';
+    const importText = 'test@example.com,token123,session123';
     const parsedAccounts = [createMockAccount({ email: 'test@example.com' })];
 
     global.mockInvoke

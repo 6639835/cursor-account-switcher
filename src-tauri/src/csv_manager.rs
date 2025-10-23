@@ -169,10 +169,16 @@ impl CsvManager {
     fn parse_account_line(&self, line: &str) -> Result<Account> {
         use chrono::Local;
 
-        // Parse format: 【email: xxx】【password:】【accessToken: xxx】【sessionToken: xxx】
-        let email = self.extract_field(line, "email")?;
-        let access_token = self.extract_field(line, "accessToken")?;
-        let session_token = self.extract_field(line, "sessionToken").unwrap_or_default();
+        // Parse format: email,accessToken,sessionToken
+        let parts: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
+
+        if parts.len() < 2 {
+            anyhow::bail!("Invalid format. Expected: email,accessToken,sessionToken");
+        }
+
+        let email = parts[0].to_string();
+        let access_token = parts[1].to_string();
+        let session_token = parts.get(2).unwrap_or(&"").to_string();
 
         Ok(Account {
             index: 0, // Will be auto-assigned
@@ -185,24 +191,11 @@ impl CsvManager {
             record_time: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
         })
     }
-
-    fn extract_field(&self, text: &str, field_name: &str) -> Result<String> {
-        let pattern = format!("【{}:", field_name);
-        if let Some(start_idx) = text.find(&pattern) {
-            let start = start_idx + pattern.len();
-            if let Some(end_idx) = text[start..].find('】') {
-                let value = text[start..start + end_idx].trim();
-                return Ok(value.to_string());
-            }
-        }
-        anyhow::bail!("Field '{}' not found", field_name)
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
 
     fn create_test_manager() -> (CsvManager, tempfile::TempDir) {
         let temp_dir = tempfile::tempdir().unwrap();
@@ -356,33 +349,49 @@ mod tests {
     fn test_parse_import_text() {
         let (manager, _temp_dir) = create_test_manager();
 
-        let import_text = "【email: user1@example.com】【password:】【accessToken: token1】【sessionToken: session1】\n【email: user2@example.com】【password:】【accessToken: token2】【sessionToken: session2】";
+        let import_text = "user1@example.com,token1,session1\nuser2@example.com,token2,session2";
 
         let accounts = manager.parse_import_text(import_text).unwrap();
         assert_eq!(accounts.len(), 2);
         assert_eq!(accounts[0].email, "user1@example.com");
+        assert_eq!(accounts[0].access_token, "token1");
+        assert_eq!(accounts[0].cookie, "session1");
         assert_eq!(accounts[1].email, "user2@example.com");
+        assert_eq!(accounts[1].access_token, "token2");
+        assert_eq!(accounts[1].cookie, "session2");
     }
 
     #[test]
-    fn test_extract_field() {
+    fn test_parse_account_line_with_session_token() {
         let (manager, _temp_dir) = create_test_manager();
 
-        let text = "【email: test@example.com】【accessToken: mytoken】";
+        let line = "test@example.com,mytoken,mysession";
+        let account = manager.parse_account_line(line).unwrap();
 
-        let email = manager.extract_field(text, "email").unwrap();
-        assert_eq!(email, "test@example.com");
-
-        let token = manager.extract_field(text, "accessToken").unwrap();
-        assert_eq!(token, "mytoken");
+        assert_eq!(account.email, "test@example.com");
+        assert_eq!(account.access_token, "mytoken");
+        assert_eq!(account.refresh_token, "mytoken");
+        assert_eq!(account.cookie, "mysession");
     }
 
     #[test]
-    fn test_extract_field_not_found() {
+    fn test_parse_account_line_without_session_token() {
         let (manager, _temp_dir) = create_test_manager();
 
-        let text = "【email: test@example.com】";
-        let result = manager.extract_field(text, "accessToken");
+        let line = "test@example.com,mytoken";
+        let account = manager.parse_account_line(line).unwrap();
+
+        assert_eq!(account.email, "test@example.com");
+        assert_eq!(account.access_token, "mytoken");
+        assert_eq!(account.cookie, "");
+    }
+
+    #[test]
+    fn test_parse_account_line_invalid_format() {
+        let (manager, _temp_dir) = create_test_manager();
+
+        let line = "test@example.com";
+        let result = manager.parse_account_line(line);
 
         assert!(result.is_err());
     }

@@ -221,7 +221,11 @@ fn update_account_info_from_api(
 
     // Find and update the account
     let updated_account = if let Some(account) = accounts.iter_mut().find(|a| a.email == email) {
-        account.days_remaining = format!("{:.1}", account_info.days_remaining);
+        account.days_remaining = if account_info.days_remaining < 0.0 {
+            "N/A".to_string()
+        } else {
+            format!("{:.1}", account_info.days_remaining)
+        };
         account.status = account_info.membership_type.clone();
         account.record_time = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
         account.clone()
@@ -246,11 +250,20 @@ fn batch_update_all_accounts(state: State<AppState>) -> Result<Vec<Account>, Str
     let api_client = CursorApiClient::new();
 
     for account in &mut accounts {
-        if let Ok(account_info) = api_client.get_account_info(&account.email, &account.access_token)
-        {
-            account.days_remaining = format!("{:.1}", account_info.days_remaining);
-            account.status = account_info.membership_type;
-            account.record_time = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        match api_client.get_account_info(&account.email, &account.access_token) {
+            Ok(account_info) => {
+                account.days_remaining = if account_info.days_remaining < 0.0 {
+                    "N/A".to_string()
+                } else {
+                    format!("{:.1}", account_info.days_remaining)
+                };
+                account.status = account_info.membership_type;
+                account.record_time = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+            }
+            Err(_e) => {
+                // Mark account as error but continue
+                account.status = "error".to_string();
+            }
         }
     }
 

@@ -58,7 +58,16 @@ impl CursorApiClient {
         let membership_type = stripe_response
             .membership_type
             .unwrap_or_else(|| "free".to_string());
-        let days_remaining = stripe_response.days_remaining_on_trial.unwrap_or(0.0);
+
+        // Get days remaining from trial field, or -1 for paid accounts without trials
+        let days_remaining = stripe_response.days_remaining_on_trial.unwrap_or_else(|| {
+            // For paid accounts (pro, ultra), there's no trial, so return -1 to indicate "N/A"
+            if membership_type.to_lowercase().contains("trial") || membership_type == "free" {
+                0.0
+            } else {
+                -1.0 // Indicates paid account with no trial
+            }
+        });
 
         Ok(AccountInfo {
             email: email.to_string(),
