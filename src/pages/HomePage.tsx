@@ -11,7 +11,6 @@ interface HomePageProps {
 }
 
 function HomePage({ accountInfo, usageInfo, loading, error, onRefresh }: HomePageProps) {
-
   const handleResetMachineId = async () => {
     if (!confirm('Are you sure you want to reset the machine ID? This will close Cursor.')) {
       return;

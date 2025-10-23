@@ -16,13 +16,13 @@ const CACHE_DURATION = 5 * 60 * 1000;
 function App() {
   const [currentTab, setCurrentTab] = useState<TabType>('home');
   const [cursorPath, setCursorPath] = useState<string>('');
-  
+
   // Lift account/usage state to App level to prevent re-fetching on navigation
   const [accountInfo, setAccountInfo] = useState<AccountInfo | null>(null);
   const [usageInfo, setUsageInfo] = useState<UsageInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   // Cache timestamp to avoid unnecessary refetches
   const lastFetchTime = useRef<number>(0);
 
@@ -36,32 +36,35 @@ function App() {
     }
   };
 
-  const loadAccountInfo = useCallback(async (forceRefresh = false) => {
-    // Check cache - skip if data is fresh and not forcing refresh
-    const now = Date.now();
-    if (!forceRefresh && accountInfo && (now - lastFetchTime.current < CACHE_DURATION)) {
-      return; // Use cached data
-    }
+  const loadAccountInfo = useCallback(
+    async (forceRefresh = false) => {
+      // Check cache - skip if data is fresh and not forcing refresh
+      const now = Date.now();
+      if (!forceRefresh && accountInfo && now - lastFetchTime.current < CACHE_DURATION) {
+        return; // Use cached data
+      }
 
-    setLoading(true);
-    setError('');
+      setLoading(true);
+      setError('');
 
-    try {
-      // Fetch both API calls in parallel for better performance
-      const [info, usage] = await Promise.all([
-        invoke<AccountInfo>('get_current_account_info'),
-        invoke<UsageInfo>('get_usage_info'),
-      ]);
-      
-      setAccountInfo(info);
-      setUsageInfo(usage);
-      lastFetchTime.current = now;
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [accountInfo]);
+      try {
+        // Fetch both API calls in parallel for better performance
+        const [info, usage] = await Promise.all([
+          invoke<AccountInfo>('get_current_account_info'),
+          invoke<UsageInfo>('get_usage_info'),
+        ]);
+
+        setAccountInfo(info);
+        setUsageInfo(usage);
+        lastFetchTime.current = now;
+      } catch (err) {
+        setError(String(err));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [accountInfo],
+  );
 
   useEffect(() => {
     // Detect Cursor path on startup

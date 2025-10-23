@@ -23,7 +23,7 @@ describe('HomePage Component', () => {
         loading={false}
         error=""
         onRefresh={mockRefresh}
-      />
+      />,
     );
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
@@ -40,7 +40,7 @@ describe('HomePage Component', () => {
         loading={false}
         error=""
         onRefresh={mockRefresh}
-      />
+      />,
     );
 
     expect(screen.getByText(mockAccountInfo.email)).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe('HomePage Component', () => {
         loading={true}
         error=""
         onRefresh={mockRefresh}
-      />
+      />,
     );
 
     expect(screen.getByText('Loading account information...')).toBeInTheDocument();
@@ -66,7 +66,7 @@ describe('HomePage Component', () => {
   it('should display error message when error prop is provided', () => {
     const errorMessage = 'Failed to load account';
     const mockRefresh = vi.fn();
-    
+
     render(
       <HomePage
         accountInfo={null}
@@ -74,7 +74,7 @@ describe('HomePage Component', () => {
         loading={false}
         error={errorMessage}
         onRefresh={mockRefresh}
-      />
+      />,
     );
 
     expect(screen.getByText(/Failed to load account/i)).toBeInTheDocument();
@@ -97,7 +97,7 @@ describe('HomePage Component', () => {
         loading={false}
         error=""
         onRefresh={mockRefresh}
-      />
+      />,
     );
 
     expect(screen.getByText('25.0%')).toBeInTheDocument();
@@ -118,7 +118,7 @@ describe('HomePage Component', () => {
         loading={false}
         error=""
         onRefresh={mockRefresh}
-      />
+      />,
     );
 
     const refreshButton = screen.getByRole('button', { name: /refresh/i });
@@ -132,7 +132,7 @@ describe('HomePage Component', () => {
     const mockAccountInfo = createMockAccountInfo();
     const mockUsageInfo = createMockUsageInfo();
     const mockRefresh = vi.fn();
-    
+
     global.mockInvoke.mockResolvedValue(undefined);
 
     render(
@@ -142,7 +142,7 @@ describe('HomePage Component', () => {
         loading={false}
         error=""
         onRefresh={mockRefresh}
-      />
+      />,
     );
 
     const resetButton = screen.getByRole('button', { name: /reset machine id/i });
@@ -164,7 +164,7 @@ describe('HomePage Component', () => {
     const mockAccountInfo = createMockAccountInfo();
     const mockUsageInfo = createMockUsageInfo();
     const mockRefresh = vi.fn();
-    
+
     window.confirm = vi.fn(() => false);
 
     render(
@@ -174,7 +174,7 @@ describe('HomePage Component', () => {
         loading={false}
         error=""
         onRefresh={mockRefresh}
-      />
+      />,
     );
 
     const resetButton = screen.getByRole('button', { name: /reset machine id/i });
@@ -200,7 +200,7 @@ describe('HomePage Component', () => {
         loading={false}
         error=""
         onRefresh={mockRefresh}
-      />
+      />,
     );
 
     const resetButton = screen.getByRole('button', { name: /reset machine id/i });
@@ -228,7 +228,7 @@ describe('HomePage Component', () => {
         loading={false}
         error=""
         onRefresh={mockRefresh}
-      />
+      />,
     );
 
     expect(screen.getByText(/premium \(Student\)/i)).toBeInTheDocument();
@@ -248,7 +248,7 @@ describe('HomePage Component', () => {
         loading={false}
         error=""
         onRefresh={mockRefresh}
-      />
+      />,
     );
 
     expect(screen.getByText('15.6 days')).toBeInTheDocument();
