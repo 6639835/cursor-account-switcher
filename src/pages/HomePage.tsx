@@ -1,35 +1,16 @@
-import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { AccountInfo, UsageInfo } from '../types';
 import { RefreshCw, User, Calendar, TrendingUp, DollarSign } from 'lucide-react';
 
-function HomePage() {
-  const [accountInfo, setAccountInfo] = useState<AccountInfo | null>(null);
-  const [usageInfo, setUsageInfo] = useState<UsageInfo | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+interface HomePageProps {
+  accountInfo: AccountInfo | null;
+  usageInfo: UsageInfo | null;
+  loading: boolean;
+  error: string;
+  onRefresh: () => void;
+}
 
-  useEffect(() => {
-    loadAccountInfo();
-  }, []);
-
-  const loadAccountInfo = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const info = await invoke<AccountInfo>('get_current_account_info');
-      setAccountInfo(info);
-
-      // Also load usage info
-      const usage = await invoke<UsageInfo>('get_usage_info');
-      setUsageInfo(usage);
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setLoading(false);
-    }
-  };
+function HomePage({ accountInfo, usageInfo, loading, error, onRefresh }: HomePageProps) {
 
   const handleResetMachineId = async () => {
     if (!confirm('Are you sure you want to reset the machine ID? This will close Cursor.')) {
@@ -49,7 +30,7 @@ function HomePage() {
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
         <button
-          onClick={loadAccountInfo}
+          onClick={onRefresh}
           disabled={loading}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
         >

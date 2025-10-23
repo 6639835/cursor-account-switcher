@@ -1,7 +1,7 @@
 {
   "name": "cursor-switcher-tauri",
   "private": true,
-  "version": "1.0.8",
+  "version": "1.0.9",
   "type": "module",
   "license": "GPL-3.0",
   "scripts": {
@@ -13,6 +13,7 @@
     "version": "npm run sync-version && git add -A",
     "test": "npm run test:frontend && npm run test:backend",
     "test:frontend": "vitest run",
+    "test:frontend:ci": "bash scripts/test-ci.sh",
     "test:frontend:watch": "vitest",
     "test:frontend:ui": "vitest --ui",
     "test:frontend:coverage": "vitest run --coverage",

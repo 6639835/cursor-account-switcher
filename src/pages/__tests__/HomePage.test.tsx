@@ -7,51 +7,80 @@ import { createMockAccountInfo, createMockUsageInfo } from '../../test/utils';
 describe('HomePage Component', () => {
   beforeEach(() => {
     global.mockInvoke.mockReset();
+    // Set up default mock implementation
+    global.mockInvoke.mockResolvedValue(undefined);
     // Reset window methods
     window.confirm = vi.fn(() => true);
     window.alert = vi.fn();
   });
 
   it('should render dashboard title', () => {
-    render(<HomePage />);
+    const mockRefresh = vi.fn();
+    render(
+      <HomePage
+        accountInfo={null}
+        usageInfo={null}
+        loading={false}
+        error=""
+        onRefresh={mockRefresh}
+      />
+    );
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
 
-  it('should load account info on mount', async () => {
+  it('should display account info when provided', () => {
     const mockAccountInfo = createMockAccountInfo();
     const mockUsageInfo = createMockUsageInfo();
+    const mockRefresh = vi.fn();
 
-    global.mockInvoke.mockResolvedValueOnce(mockAccountInfo).mockResolvedValueOnce(mockUsageInfo);
+    render(
+      <HomePage
+        accountInfo={mockAccountInfo}
+        usageInfo={mockUsageInfo}
+        loading={false}
+        error=""
+        onRefresh={mockRefresh}
+      />
+    );
 
-    render(<HomePage />);
-
-    await waitFor(() => {
-      expect(screen.getByText(mockAccountInfo.email)).toBeInTheDocument();
-    });
-
+    expect(screen.getByText(mockAccountInfo.email)).toBeInTheDocument();
     expect(screen.getByText(mockAccountInfo.membership_type)).toBeInTheDocument();
   });
 
-  it('should display loading state initially', () => {
-    global.mockInvoke.mockImplementation(() => new Promise(() => {})); // Never resolves
-    render(<HomePage />);
+  it('should display loading state when loading prop is true', () => {
+    const mockRefresh = vi.fn();
+    render(
+      <HomePage
+        accountInfo={null}
+        usageInfo={null}
+        loading={true}
+        error=""
+        onRefresh={mockRefresh}
+      />
+    );
 
     expect(screen.getByText('Loading account information...')).toBeInTheDocument();
     expect(screen.getByText('Loading usage information...')).toBeInTheDocument();
   });
 
-  it('should display error message on load failure', async () => {
+  it('should display error message when error prop is provided', () => {
     const errorMessage = 'Failed to load account';
-    global.mockInvoke.mockRejectedValueOnce(new Error(errorMessage));
+    const mockRefresh = vi.fn();
+    
+    render(
+      <HomePage
+        accountInfo={null}
+        usageInfo={null}
+        loading={false}
+        error={errorMessage}
+        onRefresh={mockRefresh}
+      />
+    );
 
-    render(<HomePage />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Failed to load account/i)).toBeInTheDocument();
-    });
+    expect(screen.getByText(/Failed to load account/i)).toBeInTheDocument();
   });
 
-  it('should display usage statistics correctly', async () => {
+  it('should display usage statistics correctly', () => {
     const mockAccountInfo = createMockAccountInfo();
     const mockUsageInfo = createMockUsageInfo({
       total_quota: 1000,
@@ -59,42 +88,62 @@ describe('HomePage Component', () => {
       remaining: 750,
       usage_percentage: 25,
     });
+    const mockRefresh = vi.fn();
 
-    global.mockInvoke.mockResolvedValueOnce(mockAccountInfo).mockResolvedValueOnce(mockUsageInfo);
+    render(
+      <HomePage
+        accountInfo={mockAccountInfo}
+        usageInfo={mockUsageInfo}
+        loading={false}
+        error=""
+        onRefresh={mockRefresh}
+      />
+    );
 
-    render(<HomePage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('25.0%')).toBeInTheDocument();
-    });
-
+    expect(screen.getByText('25.0%')).toBeInTheDocument();
     expect(screen.getByText(/\$250\.00/)).toBeInTheDocument();
     expect(screen.getByText(/\$750\.00/)).toBeInTheDocument();
   });
 
-  it('should refresh data when refresh button is clicked', async () => {
+  it('should call onRefresh when refresh button is clicked', async () => {
     const user = userEvent.setup();
     const mockAccountInfo = createMockAccountInfo();
     const mockUsageInfo = createMockUsageInfo();
+    const mockRefresh = vi.fn();
 
-    global.mockInvoke.mockResolvedValue(mockAccountInfo).mockResolvedValue(mockUsageInfo);
-
-    render(<HomePage />);
+    render(
+      <HomePage
+        accountInfo={mockAccountInfo}
+        usageInfo={mockUsageInfo}
+        loading={false}
+        error=""
+        onRefresh={mockRefresh}
+      />
+    );
 
     const refreshButton = screen.getByRole('button', { name: /refresh/i });
     await user.click(refreshButton);
 
-    // Should call the invoke functions again
-    await waitFor(() => {
-      expect(global.mockInvoke).toHaveBeenCalledWith('get_current_account_info');
-    });
+    expect(mockRefresh).toHaveBeenCalledTimes(1);
   });
 
   it('should handle machine ID reset with confirmation', async () => {
     const user = userEvent.setup();
+    const mockAccountInfo = createMockAccountInfo();
+    const mockUsageInfo = createMockUsageInfo();
+    const mockRefresh = vi.fn();
+    
     global.mockInvoke.mockResolvedValue(undefined);
 
-    render(<HomePage />);
+    render(
+      <HomePage
+        accountInfo={mockAccountInfo}
+        usageInfo={mockUsageInfo}
+        loading={false}
+        error=""
+        onRefresh={mockRefresh}
+      />
+    );
 
     const resetButton = screen.getByRole('button', { name: /reset machine id/i });
     await user.click(resetButton);
@@ -112,9 +161,21 @@ describe('HomePage Component', () => {
 
   it('should not reset machine ID if user cancels', async () => {
     const user = userEvent.setup();
+    const mockAccountInfo = createMockAccountInfo();
+    const mockUsageInfo = createMockUsageInfo();
+    const mockRefresh = vi.fn();
+    
     window.confirm = vi.fn(() => false);
 
-    render(<HomePage />);
+    render(
+      <HomePage
+        accountInfo={mockAccountInfo}
+        usageInfo={mockUsageInfo}
+        loading={false}
+        error=""
+        onRefresh={mockRefresh}
+      />
+    );
 
     const resetButton = screen.getByRole('button', { name: /reset machine id/i });
     await user.click(resetButton);
@@ -128,17 +189,19 @@ describe('HomePage Component', () => {
     const errorMessage = 'Reset failed';
     const mockAccountInfo = createMockAccountInfo();
     const mockUsageInfo = createMockUsageInfo();
+    const mockRefresh = vi.fn();
 
-    global.mockInvoke
-      .mockResolvedValueOnce(mockAccountInfo)
-      .mockResolvedValueOnce(mockUsageInfo)
-      .mockRejectedValueOnce(new Error(errorMessage));
+    global.mockInvoke.mockRejectedValue(new Error(errorMessage));
 
-    render(<HomePage />);
-
-    await waitFor(() => {
-      expect(screen.getByText(mockAccountInfo.email)).toBeInTheDocument();
-    });
+    render(
+      <HomePage
+        accountInfo={mockAccountInfo}
+        usageInfo={mockUsageInfo}
+        loading={false}
+        error=""
+        onRefresh={mockRefresh}
+      />
+    );
 
     const resetButton = screen.getByRole('button', { name: /reset machine id/i });
     await user.click(resetButton);
@@ -150,34 +213,44 @@ describe('HomePage Component', () => {
     });
   });
 
-  it('should display student badge when is_student is true', async () => {
+  it('should display student badge when is_student is true', () => {
     const mockAccountInfo = createMockAccountInfo({
       is_student: true,
       membership_type: 'premium',
     });
     const mockUsageInfo = createMockUsageInfo();
+    const mockRefresh = vi.fn();
 
-    global.mockInvoke.mockResolvedValueOnce(mockAccountInfo).mockResolvedValueOnce(mockUsageInfo);
+    render(
+      <HomePage
+        accountInfo={mockAccountInfo}
+        usageInfo={mockUsageInfo}
+        loading={false}
+        error=""
+        onRefresh={mockRefresh}
+      />
+    );
 
-    render(<HomePage />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/premium \(Student\)/i)).toBeInTheDocument();
-    });
+    expect(screen.getByText(/premium \(Student\)/i)).toBeInTheDocument();
   });
 
-  it('should display days remaining with correct precision', async () => {
+  it('should display days remaining with correct precision', () => {
     const mockAccountInfo = createMockAccountInfo({
       days_remaining: 15.6,
     });
     const mockUsageInfo = createMockUsageInfo();
+    const mockRefresh = vi.fn();
 
-    global.mockInvoke.mockResolvedValueOnce(mockAccountInfo).mockResolvedValueOnce(mockUsageInfo);
+    render(
+      <HomePage
+        accountInfo={mockAccountInfo}
+        usageInfo={mockUsageInfo}
+        loading={false}
+        error=""
+        onRefresh={mockRefresh}
+      />
+    );
 
-    render(<HomePage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('15.6 days')).toBeInTheDocument();
-    });
+    expect(screen.getByText('15.6 days')).toBeInTheDocument();
   });
 });
