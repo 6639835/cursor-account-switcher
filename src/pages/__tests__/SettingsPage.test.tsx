@@ -27,13 +27,19 @@ describe('SettingsPage Component', () => {
 
   it('should display detected cursor path', async () => {
     const mockPath = '/Applications/Cursor.app';
-    global.mockInvoke.mockResolvedValue(mockPath);
+    const mockStoragePath = '/Users/test/storage';
+
+    global.mockInvoke.mockImplementation((cmd: string) => {
+      if (cmd === 'detect_cursor_path') return Promise.resolve(mockPath);
+      if (cmd === 'get_data_storage_path') return Promise.resolve(mockStoragePath);
+      return Promise.resolve('');
+    });
 
     render(<SettingsPage />);
 
     await waitFor(() => {
-      const input = screen.getByDisplayValue(mockPath);
-      expect(input).toBeInTheDocument();
+      const inputs = screen.getAllByDisplayValue(mockPath);
+      expect(inputs.length).toBeGreaterThan(0);
     });
   });
 

@@ -10,6 +10,14 @@ pub struct Account {
     pub days_remaining: String,
     pub status: String,
     pub record_time: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub usage_used: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub usage_remaining: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub usage_total: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub usage_percentage: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

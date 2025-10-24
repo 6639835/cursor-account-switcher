@@ -259,6 +259,23 @@ fn batch_update_all_accounts(state: State<AppState>) -> Result<Vec<Account>, Str
                 };
                 account.status = account_info.membership_type;
                 account.record_time = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+                // Fetch usage info
+                match api_client.get_usage_info(&account.access_token) {
+                    Ok(usage_info) => {
+                        account.usage_used = Some(usage_info.used);
+                        account.usage_remaining = Some(usage_info.remaining);
+                        account.usage_total = Some(usage_info.total_quota);
+                        account.usage_percentage = Some(usage_info.usage_percentage);
+                    }
+                    Err(_) => {
+                        // If usage info fails, set to None
+                        account.usage_used = None;
+                        account.usage_remaining = None;
+                        account.usage_total = None;
+                        account.usage_percentage = None;
+                    }
+                }
             }
             Err(_e) => {
                 // Mark account as error but continue

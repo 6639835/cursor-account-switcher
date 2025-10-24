@@ -7,6 +7,10 @@ export interface Account {
   days_remaining: string;
   status: string;
   record_time: string;
+  usage_used?: number;
+  usage_remaining?: number;
+  usage_total?: number;
+  usage_percentage?: number;
 }
 
 export interface AccountInfo {

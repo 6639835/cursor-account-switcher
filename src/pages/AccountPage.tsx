@@ -82,10 +82,12 @@ function AccountPage() {
     try {
       const parsed = await invoke<Account[]>('import_accounts', { text: importText });
       await invoke('batch_add_accounts', { accounts: parsed });
-      await loadAccounts();
       setShowImport(false);
       setImportText('');
       alert(`Successfully imported ${parsed.length} account(s)!`);
+
+      // Auto-update all accounts in the background
+      handleBatchUpdate();
     } catch (err) {
       alert('Failed to import accounts: ' + err);
     }
@@ -199,7 +201,7 @@ function AccountPage() {
                   Days Left
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Record Time
+                  Usage Statistics
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -231,7 +233,26 @@ function AccountPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {account.record_time}
+                    {account.usage_used !== undefined && account.usage_total !== undefined ? (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-600">
+                            ${account.usage_used.toFixed(2)} / ${account.usage_total.toFixed(2)}
+                          </span>
+                          <span className="text-xs font-medium text-gray-800">
+                            {account.usage_percentage?.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="w-24 bg-gray-200 rounded-full h-1.5">
+                          <div
+                            className="bg-blue-600 h-1.5 rounded-full transition-all"
+                            style={{ width: `${Math.min(account.usage_percentage || 0, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 italic">—</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex gap-2">
