@@ -279,6 +279,48 @@ Runs on every push and pull request to ensure code quality:
 
 ## 🐛 Troubleshooting
 
+### macOS: "App is damaged and can't be opened" Error
+
+**Problem**: When downloading the `.dmg` file from GitHub releases, macOS displays an error: *"Cursor Account Switcher is damaged and can't be opened. You should move it to the Trash."*
+
+**Cause**: This app is not signed with an Apple Developer certificate (which costs $99/year). macOS Gatekeeper blocks unsigned apps downloaded from the internet.
+
+**Solution**: Remove the quarantine attribute that macOS adds to downloaded files.
+
+#### Option 1: Using Terminal (Recommended)
+
+1. Open **Terminal** (Applications → Utilities → Terminal)
+2. Run the following command:
+   ```bash
+   sudo xattr -r -d com.apple.quarantine "/Applications/Cursor Account Switcher.app"
+   ```
+   Note: Adjust the path if you installed the app elsewhere. You'll be prompted for your password.
+
+3. Launch the app normally - it should now open without issues.
+
+**What this does**: Removes the "quarantine" flag that macOS adds to downloaded files, while preserving other file metadata.
+
+#### Option 2: Right-Click Method
+
+1. Locate the app in Finder (after moving it from the DMG to Applications)
+2. **Right-click** (or Control-click) on the app
+3. Select **"Open"** from the context menu
+4. Click **"Open"** again in the security dialog
+5. The app will now run and be trusted for future launches
+
+#### Option 3: System Settings (macOS 13+)
+
+1. Try to open the app normally (it will fail)
+2. Go to **System Settings** → **Privacy & Security**
+3. Scroll down to the **Security** section
+4. You'll see a message about the blocked app
+5. Click **"Open Anyway"**
+6. Confirm by clicking **"Open"**
+
+**Important**: These methods are safe for this open-source app. Always verify the source of any software before bypassing security checks.
+
+---
+
 ### Cursor Path Not Detected
 
 Manually set the path in Settings:
