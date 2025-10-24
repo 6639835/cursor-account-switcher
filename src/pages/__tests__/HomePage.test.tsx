@@ -22,6 +22,7 @@ describe('HomePage Component', () => {
         usageInfo={null}
         loading={false}
         error=""
+        lastRefreshTime={null}
         onRefresh={mockRefresh}
       />,
     );
@@ -39,6 +40,7 @@ describe('HomePage Component', () => {
         usageInfo={mockUsageInfo}
         loading={false}
         error=""
+        lastRefreshTime={null}
         onRefresh={mockRefresh}
       />,
     );
@@ -55,6 +57,7 @@ describe('HomePage Component', () => {
         usageInfo={null}
         loading={true}
         error=""
+        lastRefreshTime={null}
         onRefresh={mockRefresh}
       />,
     );
@@ -73,6 +76,7 @@ describe('HomePage Component', () => {
         usageInfo={null}
         loading={false}
         error={errorMessage}
+        lastRefreshTime={null}
         onRefresh={mockRefresh}
       />,
     );
@@ -96,6 +100,7 @@ describe('HomePage Component', () => {
         usageInfo={mockUsageInfo}
         loading={false}
         error=""
+        lastRefreshTime={null}
         onRefresh={mockRefresh}
       />,
     );
@@ -117,6 +122,7 @@ describe('HomePage Component', () => {
         usageInfo={mockUsageInfo}
         loading={false}
         error=""
+        lastRefreshTime={null}
         onRefresh={mockRefresh}
       />,
     );
@@ -141,6 +147,7 @@ describe('HomePage Component', () => {
         usageInfo={mockUsageInfo}
         loading={false}
         error=""
+        lastRefreshTime={null}
         onRefresh={mockRefresh}
       />,
     );
@@ -173,6 +180,7 @@ describe('HomePage Component', () => {
         usageInfo={mockUsageInfo}
         loading={false}
         error=""
+        lastRefreshTime={null}
         onRefresh={mockRefresh}
       />,
     );
@@ -199,6 +207,7 @@ describe('HomePage Component', () => {
         usageInfo={mockUsageInfo}
         loading={false}
         error=""
+        lastRefreshTime={null}
         onRefresh={mockRefresh}
       />,
     );
@@ -227,6 +236,7 @@ describe('HomePage Component', () => {
         usageInfo={mockUsageInfo}
         loading={false}
         error=""
+        lastRefreshTime={null}
         onRefresh={mockRefresh}
       />,
     );
@@ -247,10 +257,51 @@ describe('HomePage Component', () => {
         usageInfo={mockUsageInfo}
         loading={false}
         error=""
+        lastRefreshTime={null}
         onRefresh={mockRefresh}
       />,
     );
 
     expect(screen.getByText('15.6 days')).toBeInTheDocument();
+  });
+
+  it('should display last refresh time when provided', () => {
+    const mockAccountInfo = createMockAccountInfo();
+    const mockUsageInfo = createMockUsageInfo();
+    const mockRefresh = vi.fn();
+    const lastRefresh = new Date(Date.now() - 30000); // 30 seconds ago
+
+    render(
+      <HomePage
+        accountInfo={mockAccountInfo}
+        usageInfo={mockUsageInfo}
+        loading={false}
+        error=""
+        lastRefreshTime={lastRefresh}
+        onRefresh={mockRefresh}
+      />,
+    );
+
+    expect(screen.getByText(/Last updated:/)).toBeInTheDocument();
+    expect(screen.getByText(/seconds ago/)).toBeInTheDocument();
+  });
+
+  it('should not display last refresh time when null', () => {
+    const mockAccountInfo = createMockAccountInfo();
+    const mockUsageInfo = createMockUsageInfo();
+    const mockRefresh = vi.fn();
+
+    render(
+      <HomePage
+        accountInfo={mockAccountInfo}
+        usageInfo={mockUsageInfo}
+        loading={false}
+        error=""
+        lastRefreshTime={null}
+        onRefresh={mockRefresh}
+      />,
+    );
+
+    expect(screen.queryByText(/Last updated:/)).not.toBeInTheDocument();
   });
 });

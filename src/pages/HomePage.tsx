@@ -1,16 +1,36 @@
 import { invoke } from '@tauri-apps/api/tauri';
 import { AccountInfo, UsageInfo } from '../types';
-import { RefreshCw, User, Calendar, TrendingUp, DollarSign } from 'lucide-react';
+import { RefreshCw, User, Calendar, TrendingUp, DollarSign, Clock } from 'lucide-react';
 
 interface HomePageProps {
   accountInfo: AccountInfo | null;
   usageInfo: UsageInfo | null;
   loading: boolean;
   error: string;
+  lastRefreshTime: Date | null;
   onRefresh: () => void;
 }
 
-function HomePage({ accountInfo, usageInfo, loading, error, onRefresh }: HomePageProps) {
+function formatRelativeTime(date: Date | null): string {
+  if (!date) return 'Never';
+  
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  
+  if (diffSeconds < 10) return 'Just now';
+  if (diffSeconds < 60) return `${diffSeconds} seconds ago`;
+  if (diffMinutes === 1) return '1 minute ago';
+  if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+  if (diffHours === 1) return '1 hour ago';
+  if (diffHours < 24) return `${diffHours} hours ago`;
+  
+  return date.toLocaleString();
+}
+
+function HomePage({ accountInfo, usageInfo, loading, error, lastRefreshTime, onRefresh }: HomePageProps) {
   const handleResetMachineId = async () => {
     if (!confirm('Are you sure you want to reset the machine ID? This will close Cursor.')) {
       return;
@@ -27,11 +47,20 @@ function HomePage({ accountInfo, usageInfo, loading, error, onRefresh }: HomePag
   return (
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
+          {lastRefreshTime && (
+            <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+              <Clock size={14} />
+              <span>Last updated: {formatRelativeTime(lastRefreshTime)}</span>
+            </div>
+          )}
+        </div>
         <button
           onClick={onRefresh}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          title="Manually refresh data (Auto-refresh every 30s)"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           Refresh
