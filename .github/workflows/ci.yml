@@ -31,11 +31,13 @@ jobs:
           # Create compatibility symlinks for webkit2gtk 4.0 -> 4.1
           sudo ln -sf /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.1.pc /usr/lib/x86_64-linux-gnu/pkgconfig/webkit2gtk-4.0.pc
           sudo ln -sf /usr/lib/x86_64-linux-gnu/pkgconfig/javascriptcoregtk-4.1.pc /usr/lib/x86_64-linux-gnu/pkgconfig/javascriptcoregtk-4.0.pc
-          # Create library symlinks
+          # Create library symlinks for webkit2gtk
           sudo ln -sf /usr/lib/x86_64-linux-gnu/libwebkit2gtk-4.1.so /usr/lib/x86_64-linux-gnu/libwebkit2gtk-4.0.so
           sudo ln -sf /usr/lib/x86_64-linux-gnu/libjavascriptcoregtk-4.1.so /usr/lib/x86_64-linux-gnu/libjavascriptcoregtk-4.0.so
-          # Create compatibility symlink for soup 2.4 -> 3.0
+          # Create compatibility symlinks for soup 2.4 -> 3.0
           sudo ln -sf /usr/lib/x86_64-linux-gnu/pkgconfig/libsoup-3.0.pc /usr/lib/x86_64-linux-gnu/pkgconfig/libsoup-2.4.pc
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/libsoup-3.0.so /usr/lib/x86_64-linux-gnu/libsoup-2.4.so
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/libsoup-3.0.so.0 /usr/lib/x86_64-linux-gnu/libsoup-2.4.so.1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
