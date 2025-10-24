@@ -29,6 +29,15 @@ A high-performance, cross-platform desktop application for managing and switchin
 - **Activity Tracking**: View all application operations
 - **Export Logs**: Save logs for debugging
 
+### 💾 Data Storage
+- **Persistent Storage**: Account data stored in user directory
+- **Survives Updates**: Data persists across app updates
+- **Cross-platform**: Follows OS best practices
+- **Storage Locations**:
+  - **macOS**: `~/Library/Application Support/com.cursor.switcher/`
+  - **Windows**: `C:\Users\<USERNAME>\AppData\Roaming\com.cursor.switcher\`
+  - **Linux**: `~/.config/com.cursor.switcher/`
+
 ## 🚀 Why Tauri?
 
 Compared to the original Python version:

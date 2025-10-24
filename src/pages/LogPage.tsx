@@ -122,7 +122,7 @@ function LogPage() {
 
       <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <p className="text-sm text-blue-800">
-          <strong>💡 Tip:</strong> Logs are automatically generated as you use the application. They
+          <strong>Tip:</strong> Logs are automatically generated as you use the application. They
           can help diagnose issues if something goes wrong.
         </p>
       </div>

@@ -5,10 +5,12 @@ import { APP_VERSION } from '../version';
 
 function SettingsPage() {
   const [cursorPath, setCursorPath] = useState('');
+  const [dataStoragePath, setDataStoragePath] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     detectPath();
+    getStoragePath();
   }, []);
 
   const detectPath = async () => {
@@ -17,6 +19,15 @@ function SettingsPage() {
       setCursorPath(path);
     } catch (err) {
       console.error('Failed to detect path:', err);
+    }
+  };
+
+  const getStoragePath = async () => {
+    try {
+      const path = await invoke<string>('get_data_storage_path');
+      setDataStoragePath(path);
+    } catch (err) {
+      console.error('Failed to get storage path:', err);
     }
   };
 
@@ -111,6 +122,21 @@ function SettingsPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
             />
           </div>
+
+          <div className="pt-4 border-t border-gray-200">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Account Data Storage
+            </label>
+            <input
+              type="text"
+              value={dataStoragePath}
+              readOnly
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 font-mono text-sm"
+            />
+            <p className="mt-2 text-sm text-gray-500">
+              Your imported accounts are stored here (persists across app updates)
+            </p>
+          </div>
         </div>
       </div>
 
@@ -137,8 +163,8 @@ function SettingsPage() {
 
         <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-sm text-yellow-800">
-            <strong>⚠️ Note:</strong> On Windows, this operation may require administrator
-            privileges. Cursor will be automatically closed during this process.
+            <strong>Note:</strong> On Windows, this operation may require administrator privileges.
+            Cursor will be automatically closed during this process.
           </p>
         </div>
       </div>

@@ -28,19 +28,19 @@ struct AppState {
     cursor_base_path: Mutex<Option<PathBuf>>,
 }
 
-// Initialize app state
+// Initialize app state with placeholder
 fn init_app_state() -> AppState {
-    let exe_dir = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-        .unwrap_or_else(|| PathBuf::from("."));
-
-    let csv_path = exe_dir.join("cursor_auth_total.csv");
-
+    // Placeholder - will be set properly in setup()
     AppState {
-        csv_path: Mutex::new(csv_path),
+        csv_path: Mutex::new(PathBuf::from(".")),
         cursor_base_path: Mutex::new(None),
     }
+}
+
+#[tauri::command]
+fn get_data_storage_path(state: State<AppState>) -> Result<String, String> {
+    let csv_path = state.csv_path.lock().unwrap();
+    Ok(csv_path.to_string_lossy().to_string())
 }
 
 #[tauri::command]
@@ -278,6 +278,7 @@ fn main() {
     tauri::Builder::default()
         .manage(init_app_state())
         .invoke_handler(tauri::generate_handler![
+            get_data_storage_path,
             detect_cursor_path,
             set_cursor_path,
             get_current_account_info,
@@ -296,9 +297,27 @@ fn main() {
             batch_update_all_accounts,
         ])
         .setup(|app| {
+            // Initialize CSV path in user data directory
+            let state: State<AppState> = app.state();
+
+            // Get app data directory (e.g., ~/Library/Application Support/com.cursor.switcher)
+            if let Some(app_data_dir) = app.path_resolver().app_data_dir() {
+                // Create directory if it doesn't exist
+                if let Err(e) = std::fs::create_dir_all(&app_data_dir) {
+                    eprintln!("Failed to create app data directory: {}", e);
+                }
+
+                let csv_path = app_data_dir.join("cursor_auth_total.csv");
+                let mut csv_path_guard = state.csv_path.lock().unwrap();
+                *csv_path_guard = csv_path.clone();
+
+                println!("Data will be stored at: {}", csv_path.display());
+            } else {
+                eprintln!("Failed to get app data directory, using current directory");
+            }
+
             // Auto-detect Cursor path on startup
             if let Ok(path) = PathDetector::detect_cursor_path() {
-                let state: State<AppState> = app.state();
                 let mut cursor_path = state.cursor_base_path.lock().unwrap();
                 *cursor_path = Some(path);
             }
