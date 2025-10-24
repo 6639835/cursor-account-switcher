@@ -1,7 +1,6 @@
 // Integration tests for cursor-switcher
 // These tests verify that different modules work together correctly
 
-use std::path::PathBuf;
 use tempfile::TempDir;
 
 // Helper function to create a temporary directory

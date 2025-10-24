@@ -2,7 +2,7 @@
 
 A high-performance, cross-platform desktop application for managing and switching between multiple Cursor AI accounts. Built with **Tauri**, **Rust**, and **React**.
 
-![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)
 
@@ -163,8 +163,16 @@ For detailed testing documentation, see [TESTING.md](TESTING.md).
 
 Format (one per line):
 ```
-【email: test@example.com】【password:】【accessToken: eyJhbGci...】【sessionToken: user_xxx%3A%3A...】
+email,accessToken,sessionToken
 ```
+
+Example:
+```
+user@example.com,eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...,WorkosCursorSessionToken=user_xxx%3A%3A...
+user2@example.com,eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Note**: SessionToken (cookie) is optional. If you only have email and accessToken, you can omit the third field.
 
 ### Switch Accounts
 

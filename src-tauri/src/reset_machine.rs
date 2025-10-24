@@ -36,13 +36,10 @@ impl MachineIdResetter {
         // Update storage.json
         self.update_storage_file(&storage_path, &new_ids)?;
 
-        // Update Windows registry if on Windows
-        #[cfg(target_os = "windows")]
-        {
-            if let Err(e) = crate::machine_id::windows::update_registry_machine_guid() {
-                eprintln!("Warning: Failed to update registry: {}", e);
-                eprintln!("Machine ID reset will continue, but may require administrator privileges for full effect.");
-            }
+        // Update Windows registry if on Windows (no-op on other platforms)
+        if let Err(e) = crate::machine_id::update_registry_machine_guid() {
+            eprintln!("Warning: Failed to update registry: {}", e);
+            eprintln!("Machine ID reset will continue, but may require administrator privileges for full effect.");
         }
 
         Ok(())

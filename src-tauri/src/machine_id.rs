@@ -19,26 +19,31 @@ impl MachineIdGenerator {
     }
 }
 
+/// Update registry machine GUID (Windows only)
+/// On non-Windows platforms, this is a no-op that returns Ok(())
 #[cfg(target_os = "windows")]
-pub mod windows {
-    use anyhow::{Context, Result};
-    use uuid::Uuid;
+pub fn update_registry_machine_guid() -> anyhow::Result<()> {
+    use anyhow::Context;
     use winreg::enums::*;
     use winreg::RegKey;
 
-    pub fn update_registry_machine_guid() -> Result<String> {
-        let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-        let path = r"SOFTWARE\Microsoft\Cryptography";
-        let key = hklm
-            .open_subkey_with_flags(path, KEY_ALL_ACCESS)
-            .context("Failed to open registry key. Administrator privileges required.")?;
+    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let path = r"SOFTWARE\Microsoft\Cryptography";
+    let key = hklm
+        .open_subkey_with_flags(path, KEY_ALL_ACCESS)
+        .context("Failed to open registry key. Administrator privileges required.")?;
 
-        let new_guid = Uuid::new_v4().to_string();
-        key.set_value("MachineGuid", &new_guid)
-            .context("Failed to set registry value")?;
+    let new_guid = Uuid::new_v4().to_string();
+    key.set_value("MachineGuid", &new_guid)
+        .context("Failed to set registry value")?;
 
-        Ok(new_guid)
-    }
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn update_registry_machine_guid() -> anyhow::Result<()> {
+    // No-op on non-Windows platforms
+    Ok(())
 }
 
 #[cfg(test)]
