@@ -6,7 +6,7 @@ import AccountPage from './pages/AccountPage';
 import SettingsPage from './pages/SettingsPage';
 import LogPage from './pages/LogPage';
 import { APP_VERSION } from './version';
-import { AccountInfo, UsageInfo } from './types';
+import { AccountInfo, UsageInfo, Account } from './types';
 
 type TabType = 'home' | 'accounts' | 'settings' | 'logs';
 
@@ -24,6 +24,11 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
+
+  // Lift accounts state to App level for persistence across navigation
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(false);
+  const [accountsLastRefreshTime, setAccountsLastRefreshTime] = useState<Date | null>(null);
 
   // Cache timestamp to avoid unnecessary refetches
   const lastFetchTime = useRef<number>(0);
@@ -71,7 +76,32 @@ function App() {
     }
   }, []); // Remove accountInfo from dependencies to prevent recreation
 
-  // Setup auto-refresh interval when on home tab
+  const accountsDataRef = useRef({ length: 0, lastRefreshTime: null as Date | null });
+  
+  // Update ref when data changes
+  useEffect(() => {
+    accountsDataRef.current = { length: accounts.length, lastRefreshTime: accountsLastRefreshTime };
+  }, [accounts.length, accountsLastRefreshTime]);
+
+  const loadAccounts = useCallback(async (forceRefresh = false) => {
+    // Only fetch if we don't have data yet or force refresh
+    if (!forceRefresh && accountsDataRef.current.length > 0 && accountsDataRef.current.lastRefreshTime) {
+      return; // Use cached data
+    }
+
+    setAccountsLoading(true);
+    try {
+      const data = await invoke<Account[]>('get_all_accounts');
+      setAccounts(data);
+      setAccountsLastRefreshTime(new Date());
+    } catch (err) {
+      console.error('Failed to load accounts:', err);
+    } finally {
+      setAccountsLoading(false);
+    }
+  }, []);
+
+  // Setup auto-refresh interval based on current tab
   useEffect(() => {
     // Clear any existing timer
     if (autoRefreshTimer.current) {
@@ -79,12 +109,16 @@ function App() {
       autoRefreshTimer.current = null;
     }
 
-    // Only auto-refresh when on home tab
-    if (currentTab === 'home') {
+    // Auto-refresh when on home or accounts tab
+    if (currentTab === 'home' || currentTab === 'accounts') {
       autoRefreshTimer.current = setInterval(() => {
         // Only auto-refresh if document is visible
         if (!document.hidden) {
-          loadAccountInfo(false); // Use cache logic
+          if (currentTab === 'home') {
+            loadAccountInfo(false); // Use cache logic
+          } else if (currentTab === 'accounts') {
+            loadAccounts(true); // Always refresh for accounts to get latest data
+          }
         }
       }, AUTO_REFRESH_INTERVAL);
     }
@@ -95,16 +129,20 @@ function App() {
         autoRefreshTimer.current = null;
       }
     };
-  }, [currentTab, loadAccountInfo]);
+  }, [currentTab, loadAccountInfo, loadAccounts]);
 
   // Handle visibility change - refresh when becoming visible
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && currentTab === 'home') {
-        // Check if cache is stale before refreshing
-        const now = Date.now();
-        if (now - lastFetchTime.current > CACHE_DURATION) {
-          loadAccountInfo(false);
+      if (!document.hidden) {
+        if (currentTab === 'home') {
+          // Check if cache is stale before refreshing
+          const now = Date.now();
+          if (now - lastFetchTime.current > CACHE_DURATION) {
+            loadAccountInfo(false);
+          }
+        } else if (currentTab === 'accounts') {
+          loadAccounts(true);
         }
       }
     };
@@ -113,7 +151,7 @@ function App() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [currentTab, loadAccountInfo]);
+  }, [currentTab, loadAccountInfo, loadAccounts]);
 
   // Initial load and path detection
   useEffect(() => {
@@ -124,7 +162,14 @@ function App() {
       // Load account info on startup
       loadAccountInfo(true);
     }
-  }, []); // Empty dependency array - only run once on mount
+  }, [loadAccountInfo]); // Include loadAccountInfo dependency
+
+  // Load accounts when switching to accounts tab
+  useEffect(() => {
+    if (currentTab === 'accounts') {
+      loadAccounts(false); // Load with cache logic
+    }
+  }, [currentTab, loadAccounts]);
 
   const tabs = [
     { id: 'home' as TabType, name: 'Home', icon: Home },
@@ -179,7 +224,17 @@ function App() {
             onRefresh={() => loadAccountInfo(true)}
           />
         )}
-        {currentTab === 'accounts' && <AccountPage />}
+        {currentTab === 'accounts' && (
+          <AccountPage
+            accountInfo={accountInfo}
+            accounts={accounts}
+            loading={accountsLoading}
+            lastRefreshTime={accountsLastRefreshTime}
+            onRefresh={() => loadAccounts(true)}
+            onAccountsUpdate={setAccounts}
+            onRefreshTimeUpdate={setAccountsLastRefreshTime}
+          />
+        )}
         {currentTab === 'settings' && <SettingsPage />}
         {currentTab === 'logs' && <LogPage />}
       </div>

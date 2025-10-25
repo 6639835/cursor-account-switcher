@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-import { Account } from '../types';
+import { Account, AccountInfo } from '../types';
 import {
   RefreshCw,
   Plus,
@@ -10,29 +10,59 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Circle,
 } from 'lucide-react';
 
-function AccountPage() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(false);
+interface AccountPageProps {
+  accountInfo: AccountInfo | null;
+  accounts: Account[];
+  loading: boolean;
+  lastRefreshTime: Date | null;
+  onRefresh: () => void;
+  onAccountsUpdate: (accounts: Account[]) => void;
+  onRefreshTimeUpdate: (time: Date) => void;
+}
+
+function formatRelativeTime(date: Date | null): string {
+  if (!date) return 'Never';
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+
+  if (diffSeconds < 10) return 'Just now';
+  if (diffSeconds < 60) return `${diffSeconds} seconds ago`;
+  if (diffMinutes === 1) return '1 minute ago';
+  if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+  if (diffHours === 1) return '1 hour ago';
+  if (diffHours < 24) return `${diffHours} hours ago`;
+
+  return date.toLocaleString();
+}
+
+function AccountPage({
+  accountInfo,
+  accounts,
+  loading,
+  lastRefreshTime,
+  onRefresh,
+  onAccountsUpdate,
+  onRefreshTimeUpdate,
+}: AccountPageProps) {
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
+  const [, setNow] = useState(new Date());
 
+  // Update the current time every second to make the relative time dynamic
   useEffect(() => {
-    loadAccounts();
-  }, []);
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
 
-  const loadAccounts = async () => {
-    setLoading(true);
-    try {
-      const data = await invoke<Account[]>('get_all_accounts');
-      setAccounts(data);
-    } catch (err) {
-      alert('Failed to load accounts: ' + err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => clearInterval(timer);
+  }, []);
 
   const handleDelete = async (email: string) => {
     if (!confirm(`Delete account ${email}?`)) {
@@ -41,7 +71,7 @@ function AccountPage() {
 
     try {
       await invoke('delete_account', { email });
-      await loadAccounts();
+      onRefresh();
     } catch (err) {
       alert('Failed to delete account: ' + err);
     }
@@ -66,15 +96,13 @@ function AccountPage() {
   };
 
   const handleBatchUpdate = async () => {
-    setLoading(true);
     try {
       const updated = await invoke<Account[]>('batch_update_all_accounts');
-      setAccounts(updated);
+      onAccountsUpdate(updated);
+      onRefreshTimeUpdate(new Date());
       alert('All accounts updated successfully!');
     } catch (err) {
       alert('Failed to update accounts: ' + err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -117,7 +145,15 @@ function AccountPage() {
   return (
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800">Account Management</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Account Management</h2>
+          {lastRefreshTime && (
+            <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+              <Clock size={14} />
+              <span>Last updated: {formatRelativeTime(lastRefreshTime)}</span>
+            </div>
+          )}
+        </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowImport(!showImport)}
@@ -135,7 +171,7 @@ function AccountPage() {
             Update All
           </button>
           <button
-            onClick={loadAccounts}
+            onClick={onRefresh}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
@@ -215,7 +251,15 @@ function AccountPage() {
                     {account.index}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {account.email}
+                    <div className="flex items-center gap-2">
+                      {account.email}
+                      {accountInfo && accountInfo.email === account.email && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-green-700 bg-green-100 border border-green-200">
+                          <Circle size={8} fill="currentColor" />
+                          Active
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { AccountInfo, UsageInfo } from '../types';
 import { RefreshCw, User, Calendar, TrendingUp, DollarSign, Clock } from 'lucide-react';
@@ -38,6 +39,17 @@ function HomePage({
   lastRefreshTime,
   onRefresh,
 }: HomePageProps) {
+  const [, setNow] = useState(new Date());
+
+  // Update the current time every second to make the relative time dynamic
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const handleResetMachineId = async () => {
     if (!confirm('Are you sure you want to reset the machine ID? This will close Cursor.')) {
       return;

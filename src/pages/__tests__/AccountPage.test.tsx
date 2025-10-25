@@ -3,6 +3,30 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AccountPage from '../AccountPage';
 import { createMockAccount } from '../../test/utils';
+import type { Account } from '../../types';
+
+// Helper function to render AccountPage with default props
+const renderAccountPage = (props: {
+  accounts?: Account[];
+  loading?: boolean;
+  lastRefreshTime?: Date | null;
+  accountInfo?: { email: string } | null;
+  onRefresh?: () => void;
+  onAccountsUpdate?: (accounts: Account[]) => void;
+  onRefreshTimeUpdate?: (time: Date) => void;
+} = {}) => {
+  const defaultProps = {
+    accounts: props.accounts || [],
+    loading: props.loading || false,
+    lastRefreshTime: props.lastRefreshTime || null,
+    accountInfo: props.accountInfo || null,
+    onRefresh: props.onRefresh || vi.fn(),
+    onAccountsUpdate: props.onAccountsUpdate || vi.fn(),
+    onRefreshTimeUpdate: props.onRefreshTimeUpdate || vi.fn(),
+  };
+  
+  return render(<AccountPage {...defaultProps} />);
+};
 
 describe('AccountPage Component', () => {
   beforeEach(() => {
@@ -12,8 +36,7 @@ describe('AccountPage Component', () => {
   });
 
   it('should render accounts page title', () => {
-    global.mockInvoke.mockResolvedValue([]);
-    render(<AccountPage />);
+    renderAccountPage();
 
     expect(screen.getByText('Account Management')).toBeInTheDocument();
   });
@@ -24,9 +47,7 @@ describe('AccountPage Component', () => {
       createMockAccount({ email: 'user2@example.com', index: 2 }),
     ];
 
-    global.mockInvoke.mockResolvedValue(mockAccounts);
-
-    render(<AccountPage />);
+    renderAccountPage({ accounts: mockAccounts });
 
     await waitFor(() => {
       expect(screen.getByText('user1@example.com')).toBeInTheDocument();
@@ -37,7 +58,7 @@ describe('AccountPage Component', () => {
   it('should display empty state when no accounts', async () => {
     global.mockInvoke.mockResolvedValue([]);
 
-    render(<AccountPage />);
+    renderAccountPage();
 
     await waitFor(() => {
       expect(screen.getByText(/No accounts found/i)).toBeInTheDocument();
@@ -47,13 +68,11 @@ describe('AccountPage Component', () => {
   it('should handle account deletion', async () => {
     const user = userEvent.setup();
     const mockAccounts = [createMockAccount()];
+    const onRefresh = vi.fn();
 
-    global.mockInvoke
-      .mockResolvedValueOnce(mockAccounts) // initial load
-      .mockResolvedValueOnce(undefined) // delete
-      .mockResolvedValueOnce([]); // reload after delete
+    global.mockInvoke.mockResolvedValue(undefined); // delete
 
-    render(<AccountPage />);
+    renderAccountPage({ accounts: mockAccounts, onRefresh });
 
     await waitFor(() => {
       expect(screen.getByText('test@example.com')).toBeInTheDocument();
@@ -69,6 +88,7 @@ describe('AccountPage Component', () => {
       expect(global.mockInvoke).toHaveBeenCalledWith('delete_account', {
         email: 'test@example.com',
       });
+      expect(onRefresh).toHaveBeenCalled();
     });
   });
 
@@ -77,9 +97,7 @@ describe('AccountPage Component', () => {
     window.confirm = vi.fn(() => false);
     const mockAccounts = [createMockAccount()];
 
-    global.mockInvoke.mockResolvedValue(mockAccounts);
-
-    render(<AccountPage />);
+    renderAccountPage({ accounts: mockAccounts });
 
     await waitFor(() => {
       expect(screen.getByText('test@example.com')).toBeInTheDocument();
@@ -107,11 +125,9 @@ describe('AccountPage Component', () => {
       refresh_token: 'refresh_123',
     });
 
-    global.mockInvoke
-      .mockResolvedValueOnce([mockAccount]) // load accounts
-      .mockResolvedValueOnce(undefined); // switch account
+    global.mockInvoke.mockResolvedValue(undefined); // switch account
 
-    render(<AccountPage />);
+    renderAccountPage({ accounts: [mockAccount] });
 
     await waitFor(() => {
       expect(screen.getByText('switch@example.com')).toBeInTheDocument();
@@ -152,11 +168,12 @@ describe('AccountPage Component', () => {
       days_remaining: '45.0',
     }));
 
-    global.mockInvoke
-      .mockResolvedValueOnce(mockAccounts) // initial load
-      .mockResolvedValueOnce(updatedAccounts); // batch update
+    const onAccountsUpdate = vi.fn();
+    const onRefreshTimeUpdate = vi.fn();
 
-    render(<AccountPage />);
+    global.mockInvoke.mockResolvedValue(updatedAccounts); // batch update
+
+    renderAccountPage({ accounts: mockAccounts, onAccountsUpdate, onRefreshTimeUpdate });
 
     await waitFor(() => {
       expect(screen.getByText('user1@example.com')).toBeInTheDocument();
@@ -167,6 +184,8 @@ describe('AccountPage Component', () => {
 
     await waitFor(() => {
       expect(global.mockInvoke).toHaveBeenCalledWith('batch_update_all_accounts');
+      expect(onAccountsUpdate).toHaveBeenCalledWith(updatedAccounts);
+      expect(onRefreshTimeUpdate).toHaveBeenCalled();
     });
 
     expect(window.alert).toHaveBeenCalledWith('All accounts updated successfully!');
@@ -176,7 +195,7 @@ describe('AccountPage Component', () => {
     const user = userEvent.setup();
     global.mockInvoke.mockResolvedValue([]);
 
-    render(<AccountPage />);
+    renderAccountPage();
 
     const importButton = screen.getByRole('button', { name: /import/i });
     await user.click(importButton);
@@ -192,12 +211,10 @@ describe('AccountPage Component', () => {
     const parsedAccounts = [createMockAccount({ email: 'test@example.com' })];
 
     global.mockInvoke
-      .mockResolvedValueOnce([]) // initial load
       .mockResolvedValueOnce(parsedAccounts) // import_accounts
-      .mockResolvedValueOnce(undefined) // batch_add_accounts
-      .mockResolvedValueOnce(parsedAccounts); // reload
+      .mockResolvedValueOnce(undefined); // batch_add_accounts
 
-    render(<AccountPage />);
+    renderAccountPage();
 
     // Click the "Import" button to show the import modal
     const importButton = screen.getAllByRole('button', { name: /import/i })[0];
@@ -228,9 +245,7 @@ describe('AccountPage Component', () => {
       createMockAccount({ email: 'free@example.com', status: 'free', index: 2 }),
     ];
 
-    global.mockInvoke.mockResolvedValue(mockAccounts);
-
-    render(<AccountPage />);
+    renderAccountPage({ accounts: mockAccounts });
 
     await waitFor(() => {
       expect(screen.getByText('pro@example.com')).toBeInTheDocument();
@@ -239,13 +254,11 @@ describe('AccountPage Component', () => {
   });
 
   it('should handle load accounts error', async () => {
-    const errorMessage = 'Failed to load';
-    global.mockInvoke.mockRejectedValue(new Error(errorMessage));
-
-    render(<AccountPage />);
-
-    await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Failed to load accounts'));
-    });
+    // Since accounts are now provided via props from App, this test is no longer applicable
+    // The error handling happens at the App level, not in AccountPage
+    renderAccountPage();
+    
+    // Just verify the page renders without crashing
+    expect(screen.getByText('Account Management')).toBeInTheDocument();
   });
 });

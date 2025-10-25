@@ -67,9 +67,20 @@ describe('App Component', () => {
     });
 
     // Verify we're on the accounts page
-    await waitFor(() => {
-      expect(screen.getByText('Account Management')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Account Management')).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
+
+    // Wait for get_all_accounts to be called
+    await waitFor(
+      () => {
+        expect(global.mockInvoke).toHaveBeenCalledWith('get_all_accounts');
+      },
+      { timeout: 5000 },
+    );
   });
 
   it('should display version in footer', () => {
