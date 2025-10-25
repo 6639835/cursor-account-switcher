@@ -13,24 +13,31 @@ interface HomePageProps {
 
 function formatRelativeTime(date: Date | null): string {
   if (!date) return 'Never';
-  
+
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffSeconds = Math.floor(diffMs / 1000);
   const diffMinutes = Math.floor(diffSeconds / 60);
   const diffHours = Math.floor(diffMinutes / 60);
-  
+
   if (diffSeconds < 10) return 'Just now';
   if (diffSeconds < 60) return `${diffSeconds} seconds ago`;
   if (diffMinutes === 1) return '1 minute ago';
   if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
   if (diffHours === 1) return '1 hour ago';
   if (diffHours < 24) return `${diffHours} hours ago`;
-  
+
   return date.toLocaleString();
 }
 
-function HomePage({ accountInfo, usageInfo, loading, error, lastRefreshTime, onRefresh }: HomePageProps) {
+function HomePage({
+  accountInfo,
+  usageInfo,
+  loading,
+  error,
+  lastRefreshTime,
+  onRefresh,
+}: HomePageProps) {
   const handleResetMachineId = async () => {
     if (!confirm('Are you sure you want to reset the machine ID? This will close Cursor.')) {
       return;

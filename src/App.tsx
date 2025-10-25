@@ -43,7 +43,7 @@ function App() {
     // Check cache - skip if data is fresh and not forcing refresh
     const now = Date.now();
     const hasValidCache = lastFetchTime.current > 0 && now - lastFetchTime.current < CACHE_DURATION;
-    
+
     if (!forceRefresh && hasValidCache) {
       return; // Use cached data
     }
