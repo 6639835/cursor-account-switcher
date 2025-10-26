@@ -7,6 +7,7 @@ export interface Account {
   days_remaining: string;
   status: string;
   record_time: string;
+  source: string; // "imported" or "web_login"
   usage_used?: number;
   usage_remaining?: number;
   usage_total?: number;

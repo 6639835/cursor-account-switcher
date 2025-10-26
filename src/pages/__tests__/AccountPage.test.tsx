@@ -6,15 +6,18 @@ import { createMockAccount } from '../../test/utils';
 import type { Account } from '../../types';
 
 // Helper function to render AccountPage with default props
-const renderAccountPage = (props: {
-  accounts?: Account[];
-  loading?: boolean;
-  lastRefreshTime?: Date | null;
-  accountInfo?: { email: string } | null;
-  onRefresh?: () => void;
-  onAccountsUpdate?: (accounts: Account[]) => void;
-  onRefreshTimeUpdate?: (time: Date) => void;
-} = {}) => {
+const renderAccountPage = (
+  props: {
+    accounts?: Account[];
+    loading?: boolean;
+    lastRefreshTime?: Date | null;
+    accountInfo?: { email: string } | null;
+    onRefresh?: () => void;
+    onAccountsUpdate?: (accounts: Account[]) => void;
+    onRefreshTimeUpdate?: (time: Date) => void;
+    onRefreshHome?: () => void;
+  } = {},
+) => {
   const defaultProps = {
     accounts: props.accounts || [],
     loading: props.loading || false,
@@ -23,8 +26,9 @@ const renderAccountPage = (props: {
     onRefresh: props.onRefresh || vi.fn(),
     onAccountsUpdate: props.onAccountsUpdate || vi.fn(),
     onRefreshTimeUpdate: props.onRefreshTimeUpdate || vi.fn(),
+    onRefreshHome: props.onRefreshHome || vi.fn(),
   };
-  
+
   return render(<AccountPage {...defaultProps} />);
 };
 
@@ -127,7 +131,14 @@ describe('AccountPage Component', () => {
 
     global.mockInvoke.mockResolvedValue(undefined); // switch account
 
-    renderAccountPage({ accounts: [mockAccount] });
+    const onRefreshHome = vi.fn();
+    const onRefresh = vi.fn();
+
+    renderAccountPage({
+      accounts: [mockAccount],
+      onRefreshHome,
+      onRefresh,
+    });
 
     await waitFor(() => {
       expect(screen.getByText('switch@example.com')).toBeInTheDocument();
@@ -152,6 +163,15 @@ describe('AccountPage Component', () => {
           resetMachine: true,
         });
       });
+
+      // Wait for the auto-refresh (1000ms timeout)
+      await waitFor(
+        () => {
+          expect(onRefreshHome).toHaveBeenCalled();
+          expect(onRefresh).toHaveBeenCalled();
+        },
+        { timeout: 2000 },
+      );
     }
   });
 
@@ -257,7 +277,7 @@ describe('AccountPage Component', () => {
     // Since accounts are now provided via props from App, this test is no longer applicable
     // The error handling happens at the App level, not in AccountPage
     renderAccountPage();
-    
+
     // Just verify the page renders without crashing
     expect(screen.getByText('Account Management')).toBeInTheDocument();
   });

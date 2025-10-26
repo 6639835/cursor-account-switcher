@@ -67,6 +67,14 @@ function App() {
       setUsageInfo(usage);
       lastFetchTime.current = now;
       setLastRefreshTime(new Date());
+
+      // Sync current account to CSV (detect web-logged accounts)
+      try {
+        await invoke('sync_current_account');
+      } catch (syncErr) {
+        // Don't fail the whole operation if sync fails
+        console.warn('Failed to sync current account:', syncErr);
+      }
     } catch (err) {
       setError(String(err));
       // On error, clear the last fetch time so next attempt won't be blocked by cache
@@ -77,7 +85,7 @@ function App() {
   }, []); // Remove accountInfo from dependencies to prevent recreation
 
   const accountsDataRef = useRef({ length: 0, lastRefreshTime: null as Date | null });
-  
+
   // Update ref when data changes
   useEffect(() => {
     accountsDataRef.current = { length: accounts.length, lastRefreshTime: accountsLastRefreshTime };
@@ -85,7 +93,11 @@ function App() {
 
   const loadAccounts = useCallback(async (forceRefresh = false) => {
     // Only fetch if we don't have data yet or force refresh
-    if (!forceRefresh && accountsDataRef.current.length > 0 && accountsDataRef.current.lastRefreshTime) {
+    if (
+      !forceRefresh &&
+      accountsDataRef.current.length > 0 &&
+      accountsDataRef.current.lastRefreshTime
+    ) {
       return; // Use cached data
     }
 
@@ -233,6 +245,7 @@ function App() {
             onRefresh={() => loadAccounts(true)}
             onAccountsUpdate={setAccounts}
             onRefreshTimeUpdate={setAccountsLastRefreshTime}
+            onRefreshHome={() => loadAccountInfo(true)}
           />
         )}
         {currentTab === 'settings' && <SettingsPage />}

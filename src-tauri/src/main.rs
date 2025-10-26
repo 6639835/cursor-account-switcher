@@ -291,6 +291,67 @@ fn batch_update_all_accounts(state: State<AppState>) -> Result<Vec<Account>, Str
     Ok(accounts)
 }
 
+#[tauri::command]
+fn sync_current_account(state: State<AppState>) -> Result<(), String> {
+    let cursor_path = state.cursor_base_path.lock().unwrap();
+    let base_path = cursor_path.as_ref().ok_or("Cursor path not set")?;
+
+    let csv_path = state.csv_path.lock().unwrap();
+    let csv_manager = CsvManager::new(csv_path.clone());
+
+    // Get current account from Cursor's database
+    let db_path = PathDetector::get_db_path(base_path);
+    let db = Database::new(db_path);
+
+    let (email, access_token) = match db.get_auth_info() {
+        Ok(info) => info,
+        Err(_) => {
+            // No account logged in, just return
+            return Ok(());
+        }
+    };
+
+    // Read existing accounts
+    let mut accounts = csv_manager.read_accounts().map_err(|e| e.to_string())?;
+
+    // Check if account already exists
+    let existing_account = accounts.iter_mut().find(|a| a.email == email);
+
+    if let Some(account) = existing_account {
+        // Update tokens but preserve source
+        account.access_token = access_token.clone();
+        account.refresh_token = access_token.clone();
+        account.record_time = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+        csv_manager
+            .write_accounts(&accounts)
+            .map_err(|e| e.to_string())?;
+    } else {
+        // Add new account with source="web_login"
+        let new_account = Account {
+            index: 0, // Will be auto-assigned
+            email: email.clone(),
+            access_token: access_token.clone(),
+            refresh_token: access_token,
+            cookie: String::new(),
+            days_remaining: "N/A".to_string(),
+            status: "unknown".to_string(),
+            record_time: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            source: "web_login".to_string(),
+            usage_used: None,
+            usage_remaining: None,
+            usage_total: None,
+            usage_percentage: None,
+        };
+
+        csv_manager
+            .add_account(new_account)
+            .map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(init_app_state())
@@ -312,6 +373,7 @@ fn main() {
             restart_cursor_process,
             update_account_info_from_api,
             batch_update_all_accounts,
+            sync_current_account,
         ])
         .setup(|app| {
             // Initialize CSV path in user data directory

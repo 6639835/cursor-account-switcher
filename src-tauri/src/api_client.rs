@@ -55,9 +55,9 @@ impl CursorApiClient {
             .json()
             .context("Failed to parse stripe response")?;
 
-        let membership_type = stripe_response
-            .membership_type
-            .unwrap_or_else(|| "free".to_string());
+        let membership_type = stripe_response.membership_type.ok_or_else(|| {
+            anyhow::anyhow!("API returned null membership_type - token may be invalid")
+        })?;
 
         // Get days remaining from trial field, or -1 for paid accounts without trials
         let days_remaining = stripe_response.days_remaining_on_trial.unwrap_or_else(|| {

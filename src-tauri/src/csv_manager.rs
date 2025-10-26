@@ -37,6 +37,7 @@ impl CsvManager {
             "Days Remaining",
             "Status",
             "Record Time",
+            "Source",
             "Usage Used",
             "Usage Remaining",
             "Usage Total",
@@ -54,10 +55,11 @@ impl CsvManager {
         for result in reader.records() {
             let record = result?;
             if record.len() >= 8 {
-                let usage_used = record.get(8).and_then(|s| s.parse().ok());
-                let usage_remaining = record.get(9).and_then(|s| s.parse().ok());
-                let usage_total = record.get(10).and_then(|s| s.parse().ok());
-                let usage_percentage = record.get(11).and_then(|s| s.parse().ok());
+                let source = record.get(8).unwrap_or("imported").to_string();
+                let usage_used = record.get(9).and_then(|s| s.parse().ok());
+                let usage_remaining = record.get(10).and_then(|s| s.parse().ok());
+                let usage_total = record.get(11).and_then(|s| s.parse().ok());
+                let usage_percentage = record.get(12).and_then(|s| s.parse().ok());
 
                 accounts.push(Account {
                     index: record.get(0).unwrap_or("0").parse().unwrap_or(0),
@@ -68,6 +70,7 @@ impl CsvManager {
                     days_remaining: record.get(5).unwrap_or("0").to_string(),
                     status: record.get(6).unwrap_or("unknown").to_string(),
                     record_time: record.get(7).unwrap_or("").to_string(),
+                    source,
                     usage_used,
                     usage_remaining,
                     usage_total,
@@ -98,6 +101,7 @@ impl CsvManager {
             "Days Remaining",
             "Status",
             "Record Time",
+            "Source",
             "Usage Used",
             "Usage Remaining",
             "Usage Total",
@@ -115,6 +119,7 @@ impl CsvManager {
                 &account.days_remaining,
                 &account.status,
                 &account.record_time,
+                &account.source,
                 &account
                     .usage_used
                     .map(|v| v.to_string())
@@ -222,6 +227,7 @@ impl CsvManager {
             days_remaining: "0".to_string(),
             status: "unknown".to_string(),
             record_time: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            source: "imported".to_string(),
             usage_used: None,
             usage_remaining: None,
             usage_total: None,
@@ -265,6 +271,7 @@ mod tests {
                 days_remaining: "30".to_string(),
                 status: "premium".to_string(),
                 record_time: "2024-01-01".to_string(),
+                source: "imported".to_string(),
                 usage_used: None,
                 usage_remaining: None,
                 usage_total: None,
@@ -279,6 +286,7 @@ mod tests {
                 days_remaining: "15".to_string(),
                 status: "free".to_string(),
                 record_time: "2024-01-02".to_string(),
+                source: "imported".to_string(),
                 usage_used: None,
                 usage_remaining: None,
                 usage_total: None,
@@ -308,6 +316,7 @@ mod tests {
             days_remaining: "30".to_string(),
             status: "premium".to_string(),
             record_time: "2024-01-01".to_string(),
+            source: "imported".to_string(),
             usage_used: None,
             usage_remaining: None,
             usage_total: None,
@@ -336,6 +345,7 @@ mod tests {
             days_remaining: "30".to_string(),
             status: "premium".to_string(),
             record_time: "2024-01-01".to_string(),
+            source: "imported".to_string(),
             usage_used: None,
             usage_remaining: None,
             usage_total: None,
@@ -373,6 +383,7 @@ mod tests {
             days_remaining: "30".to_string(),
             status: "premium".to_string(),
             record_time: "2024-01-01".to_string(),
+            source: "imported".to_string(),
             usage_used: None,
             usage_remaining: None,
             usage_total: None,
@@ -390,6 +401,7 @@ mod tests {
             days_remaining: "45".to_string(),
             status: "ultra".to_string(),
             record_time: "2024-01-02".to_string(),
+            source: "imported".to_string(),
             usage_used: None,
             usage_remaining: None,
             usage_total: None,

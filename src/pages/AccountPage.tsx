@@ -10,7 +10,6 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Circle,
 } from 'lucide-react';
 
 interface AccountPageProps {
@@ -21,6 +20,7 @@ interface AccountPageProps {
   onRefresh: () => void;
   onAccountsUpdate: (accounts: Account[]) => void;
   onRefreshTimeUpdate: (time: Date) => void;
+  onRefreshHome: () => void;
 }
 
 function formatRelativeTime(date: Date | null): string {
@@ -50,6 +50,7 @@ function AccountPage({
   onRefresh,
   onAccountsUpdate,
   onRefreshTimeUpdate,
+  onRefreshHome,
 }: AccountPageProps) {
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
@@ -90,6 +91,12 @@ function AccountPage({
         resetMachine: true,
       });
       alert('Account switched successfully! Cursor has been closed. Please restart it.');
+
+      // Auto-refresh after account switch
+      setTimeout(() => {
+        onRefreshHome(); // Refresh home page data
+        onRefresh(); // Refresh accounts list
+      }, 1000); // Small delay to ensure DB is updated
     } catch (err) {
       alert('Failed to switch account: ' + err);
     }
@@ -252,11 +259,15 @@ function AccountPage({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     <div className="flex items-center gap-2">
-                      {account.email}
+                      <span>{account.email}</span>
                       {accountInfo && accountInfo.email === account.email && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-green-700 bg-green-100 border border-green-200">
-                          <Circle size={8} fill="currentColor" />
                           Active
+                        </span>
+                      )}
+                      {account.source === 'web_login' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200">
+                          Web Login
                         </span>
                       )}
                     </div>

@@ -10,6 +10,8 @@ pub struct Account {
     pub days_remaining: String,
     pub status: String,
     pub record_time: String,
+    #[serde(default = "default_source")]
+    pub source: String, // "imported" or "web_login"
     #[serde(skip_serializing_if = "Option::is_none")]
     pub usage_used: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -18,6 +20,10 @@ pub struct Account {
     pub usage_total: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub usage_percentage: Option<f64>,
+}
+
+fn default_source() -> String {
+    "imported".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
