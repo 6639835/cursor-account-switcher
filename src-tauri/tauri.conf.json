@@ -60,6 +60,11 @@
     "security": {
       "csp": null
     },
+    "systemTray": {
+      "iconPath": "icons/32x32.png",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": false
+    },
     "windows": [
       {
         "fullscreen": false,

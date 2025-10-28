@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FileText, Trash2, Download } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/tauri';
+import { FileText, Trash2, Download, RefreshCw } from 'lucide-react';
 
 interface LogEntry {
   timestamp: string;
@@ -9,27 +10,47 @@ interface LogEntry {
 
 function LogPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [logFilePath, setLogFilePath] = useState('');
+
+  const loadLogs = async () => {
+    setLoading(true);
+    try {
+      const logData = await invoke<LogEntry[]>('get_logs');
+      setLogs(logData.reverse()); // Show newest first
+    } catch (err) {
+      console.error('Failed to load logs:', err);
+      alert('Failed to load logs: ' + err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getLogPath = async () => {
+    try {
+      const path = await invoke<string>('get_log_file_path');
+      setLogFilePath(path);
+    } catch (err) {
+      console.error('Failed to get log path:', err);
+    }
+  };
 
   useEffect(() => {
-    // In a real implementation, you would read logs from a file
-    // For now, we'll show a placeholder
-    setLogs([
-      {
-        timestamp: new Date().toISOString(),
-        level: 'INFO',
-        message: 'Application started',
-      },
-      {
-        timestamp: new Date().toISOString(),
-        level: 'INFO',
-        message: 'Cursor path auto-detected successfully',
-      },
-    ]);
+    loadLogs();
+    getLogPath();
   }, []);
 
-  const handleClearLogs = () => {
-    if (confirm('Clear all logs?')) {
+  const handleClearLogs = async () => {
+    if (!confirm('Clear all logs?')) {
+      return;
+    }
+
+    try {
+      await invoke('clear_logs');
       setLogs([]);
+      alert('Logs cleared successfully!');
+    } catch (err) {
+      alert('Failed to clear logs: ' + err);
     }
   };
 
@@ -66,8 +87,23 @@ function LogPage() {
   return (
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800">Application Logs</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Application Logs</h2>
+          {logFilePath && (
+            <p className="text-sm text-gray-500 mt-1">
+              Log file: <code className="text-xs bg-gray-100 px-2 py-0.5 rounded">{logFilePath}</code>
+            </p>
+          )}
+        </div>
         <div className="flex gap-2">
+          <button
+            onClick={loadLogs}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            Refresh
+          </button>
           <button
             onClick={handleExportLogs}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"

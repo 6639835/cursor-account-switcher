@@ -4,6 +4,7 @@
 mod api_client;
 mod csv_manager;
 mod database;
+mod logger;
 mod machine_id;
 mod path_detector;
 mod process_utils;
@@ -13,6 +14,7 @@ mod types;
 use api_client::CursorApiClient;
 use csv_manager::CsvManager;
 use database::Database;
+use logger::{Logger, LogEntry};
 use path_detector::PathDetector;
 use process_utils::ProcessManager;
 use reset_machine::MachineIdResetter;
@@ -20,12 +22,18 @@ use types::*;
 
 use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::{Manager, State};
+use tauri::{
+    CustomMenuItem, Manager, State, SystemTray, SystemTrayEvent, SystemTrayMenu,
+    SystemTrayMenuItem, WindowEvent,
+};
+use tracing_appender::non_blocking::WorkerGuard;
 
 // Global state
 struct AppState {
     csv_path: Mutex<PathBuf>,
     cursor_base_path: Mutex<Option<PathBuf>>,
+    log_path: Mutex<PathBuf>,
+    _log_guard: Mutex<Option<WorkerGuard>>,
 }
 
 // Initialize app state with placeholder
@@ -34,6 +42,8 @@ fn init_app_state() -> AppState {
     AppState {
         csv_path: Mutex::new(PathBuf::from(".")),
         cursor_base_path: Mutex::new(None),
+        log_path: Mutex::new(PathBuf::from(".")),
+        _log_guard: Mutex::new(None),
     }
 }
 
@@ -60,18 +70,26 @@ fn set_cursor_path(state: State<AppState>, path: String) -> Result<(), String> {
 
 #[tauri::command]
 fn get_current_account_info(state: State<AppState>) -> Result<AccountInfo, String> {
+    tracing::info!("Fetching current account info");
     let cursor_path = state.cursor_base_path.lock().unwrap();
     let base_path = cursor_path.as_ref().ok_or("Cursor path not set")?;
 
     let db_path = PathDetector::get_db_path(base_path);
     let db = Database::new(db_path);
 
-    let (email, access_token) = db.get_auth_info().map_err(|e| e.to_string())?;
+    let (email, access_token) = db.get_auth_info().map_err(|e| {
+        tracing::error!("Failed to get auth info: {}", e);
+        e.to_string()
+    })?;
 
+    tracing::debug!("Fetching account info for: {}", email);
     let api_client = CursorApiClient::new();
     api_client
         .get_account_info(&email, &access_token)
-        .map_err(|e| e.to_string())
+        .map_err(|e| {
+            tracing::error!("Failed to fetch account info: {}", e);
+            e.to_string()
+        })
 }
 
 #[tauri::command]
@@ -130,12 +148,19 @@ fn update_account(state: State<AppState>, email: String, account: Account) -> Re
 
 #[tauri::command]
 fn import_accounts(state: State<AppState>, text: String) -> Result<Vec<Account>, String> {
+    tracing::info!("Importing accounts from text");
     let csv_path = state.csv_path.lock().unwrap();
     let csv_manager = CsvManager::new(csv_path.clone());
 
-    csv_manager
+    let result = csv_manager
         .parse_import_text(&text)
-        .map_err(|e| e.to_string())
+        .map_err(|e| {
+            tracing::error!("Failed to parse import text: {}", e);
+            e.to_string()
+        })?;
+    
+    tracing::info!("Successfully parsed {} account(s)", result.len());
+    Ok(result)
 }
 
 #[tauri::command]
@@ -160,37 +185,55 @@ fn switch_account(
     refresh_token: String,
     reset_machine: bool,
 ) -> Result<(), String> {
+    tracing::info!("Switching to account: {}", email);
     let cursor_path = state.cursor_base_path.lock().unwrap();
     let base_path = cursor_path.as_ref().ok_or("Cursor path not set")?.clone();
 
     // Kill Cursor process
-    ProcessManager::kill_cursor().map_err(|e| e.to_string())?;
+    tracing::info!("Killing Cursor process");
+    ProcessManager::kill_cursor().map_err(|e| {
+        tracing::error!("Failed to kill Cursor process: {}", e);
+        e.to_string()
+    })?;
 
     // Update database
+    tracing::info!("Updating database with new credentials");
     let db_path = PathDetector::get_db_path(&base_path);
     let db = Database::new(db_path);
 
     db.update_auth(&email, &access_token, Some(&refresh_token))
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| {
+            tracing::error!("Failed to update database: {}", e);
+            e.to_string()
+        })?;
 
     // Reset machine ID if requested
     if reset_machine {
+        tracing::info!("Resetting machine ID");
         let resetter = MachineIdResetter::new(base_path.clone());
         resetter
             .reset()
-            .map_err(|e| format!("Machine ID reset failed: {}", e))?;
+            .map_err(|e| {
+                tracing::error!("Machine ID reset failed: {}", e);
+                format!("Machine ID reset failed: {}", e)
+            })?;
     }
 
+    tracing::info!("Account switch completed successfully");
     Ok(())
 }
 
 #[tauri::command]
 fn reset_machine_id(state: State<AppState>) -> Result<(), String> {
+    tracing::info!("Resetting machine ID");
     let cursor_path = state.cursor_base_path.lock().unwrap();
     let base_path = cursor_path.as_ref().ok_or("Cursor path not set")?.clone();
 
     let resetter = MachineIdResetter::new(base_path);
-    resetter.reset().map_err(|e| e.to_string())
+    resetter.reset().map_err(|e| {
+        tracing::error!("Failed to reset machine ID: {}", e);
+        e.to_string()
+    })
 }
 
 #[tauri::command]
@@ -242,12 +285,16 @@ fn update_account_info_from_api(
 
 #[tauri::command]
 fn batch_update_all_accounts(state: State<AppState>) -> Result<Vec<Account>, String> {
+    tracing::info!("Starting batch update for all accounts");
     let csv_path = state.csv_path.lock().unwrap();
     let csv_manager = CsvManager::new(csv_path.clone());
 
     let mut accounts = csv_manager.read_accounts().map_err(|e| e.to_string())?;
+    tracing::info!("Updating {} account(s)", accounts.len());
 
     let api_client = CursorApiClient::new();
+    let mut success_count = 0;
+    let mut error_count = 0;
 
     for account in &mut accounts {
         match api_client.get_account_info(&account.email, &account.access_token) {
@@ -268,18 +315,21 @@ fn batch_update_all_accounts(state: State<AppState>) -> Result<Vec<Account>, Str
                         account.usage_total = Some(usage_info.total_quota);
                         account.usage_percentage = Some(usage_info.usage_percentage);
                     }
-                    Err(_) => {
-                        // If usage info fails, set to None
+                    Err(e) => {
+                        tracing::warn!("Failed to fetch usage info for {}: {}", account.email, e);
                         account.usage_used = None;
                         account.usage_remaining = None;
                         account.usage_total = None;
                         account.usage_percentage = None;
                     }
                 }
+                success_count += 1;
+                tracing::debug!("Updated account: {}", account.email);
             }
-            Err(_e) => {
-                // Mark account as error but continue
+            Err(e) => {
+                tracing::error!("Failed to update account {}: {}", account.email, e);
                 account.status = "error".to_string();
+                error_count += 1;
             }
         }
     }
@@ -288,6 +338,7 @@ fn batch_update_all_accounts(state: State<AppState>) -> Result<Vec<Account>, Str
         .write_accounts(&accounts)
         .map_err(|e| e.to_string())?;
 
+    tracing::info!("Batch update completed: {} successful, {} failed", success_count, error_count);
     Ok(accounts)
 }
 
@@ -352,9 +403,150 @@ fn sync_current_account(state: State<AppState>) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn get_logs(state: State<AppState>) -> Result<Vec<LogEntry>, String> {
+    let log_path = state.log_path.lock().unwrap();
+    let logger = Logger::new(log_path.clone());
+    
+    logger.read_logs().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn clear_logs(state: State<AppState>) -> Result<(), String> {
+    let log_path = state.log_path.lock().unwrap();
+    let logger = Logger::new(log_path.clone());
+    
+    logger.clear_logs().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_log_file_path(state: State<AppState>) -> Result<String, String> {
+    let log_path = state.log_path.lock().unwrap();
+    let logger = Logger::new(log_path.clone());
+    
+    Ok(logger.get_log_path().to_string_lossy().to_string())
+}
+
+#[tauri::command]
+fn sync_from_tray(state: State<AppState>) -> Result<String, String> {
+    tracing::info!("Syncing current account from tray");
+    sync_current_account(state)?;
+    Ok("Account synced successfully".to_string())
+}
+
+#[tauri::command]
+fn refresh_from_tray(state: State<AppState>) -> Result<String, String> {
+    tracing::info!("Refreshing all accounts from tray");
+    let accounts = batch_update_all_accounts(state)?;
+    Ok(format!("Refreshed {} accounts", accounts.len()))
+}
+
+fn build_system_tray() -> SystemTray {
+    let show = CustomMenuItem::new("show".to_string(), "Show Window");
+    let hide = CustomMenuItem::new("hide".to_string(), "Hide Window");
+    let sync = CustomMenuItem::new("sync".to_string(), "Sync Current Account");
+    let refresh = CustomMenuItem::new("refresh".to_string(), "Refresh All Accounts");
+    let quit = CustomMenuItem::new("quit".to_string(), "Quit");
+    
+    let tray_menu = SystemTrayMenu::new()
+        .add_item(show)
+        .add_item(hide)
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(sync)
+        .add_item(refresh)
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(quit);
+    
+    SystemTray::new().with_menu(tray_menu)
+}
+
+fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
+    match event {
+        SystemTrayEvent::LeftClick {
+            position: _,
+            size: _,
+            ..
+        } => {
+            // Left-click: Toggle window visibility (no menu)
+            if let Some(window) = app.get_window("main") {
+                if window.is_visible().unwrap_or(false) {
+                    let _ = window.hide();
+                } else {
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
+            }
+        }
+        SystemTrayEvent::RightClick {
+            position: _,
+            size: _,
+            ..
+        } => {
+            // Right-click: Show menu only (no window popup)
+            // The menu will show automatically, nothing to do here
+        }
+        SystemTrayEvent::MenuItemClick { id, .. } => {
+            match id.as_str() {
+                "show" => {
+                    if let Some(window) = app.get_window("main") {
+                        let _ = window.show();
+                        let _ = window.unminimize();
+                        let _ = window.set_focus();
+                    }
+                }
+                "hide" => {
+                    if let Some(window) = app.get_window("main") {
+                        let _ = window.hide();
+                    }
+                }
+                "sync" => {
+                    // Sync current account
+                    let state: State<AppState> = app.state();
+                    match sync_current_account(state) {
+                        Ok(_) => {
+                            tracing::info!("Synced current account from tray");
+                            // Notify frontend if window is open
+                            if let Some(window) = app.get_window("main") {
+                                let _ = window.emit("account-synced", ());
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!("Failed to sync account: {}", e);
+                        }
+                    }
+                }
+                "refresh" => {
+                    // Refresh all accounts
+                    let state: State<AppState> = app.state();
+                    match batch_update_all_accounts(state) {
+                        Ok(accounts) => {
+                            tracing::info!("Refreshed {} accounts from tray", accounts.len());
+                            // Notify frontend if window is open
+                            if let Some(window) = app.get_window("main") {
+                                let _ = window.emit("accounts-refreshed", ());
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!("Failed to refresh accounts: {}", e);
+                        }
+                    }
+                }
+                "quit" => {
+                    std::process::exit(0);
+                }
+                _ => {}
+            }
+        }
+        _ => {}
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(init_app_state())
+        .system_tray(build_system_tray())
+        .on_system_tray_event(handle_system_tray_event)
         .invoke_handler(tauri::generate_handler![
             get_data_storage_path,
             detect_cursor_path,
@@ -374,7 +566,19 @@ fn main() {
             update_account_info_from_api,
             batch_update_all_accounts,
             sync_current_account,
+            get_logs,
+            clear_logs,
+            get_log_file_path,
+            sync_from_tray,
+            refresh_from_tray,
         ])
+        .on_window_event(|event| {
+            if let WindowEvent::CloseRequested { api, .. } = event.event() {
+                // Prevent window from closing, hide it instead
+                event.window().hide().unwrap();
+                api.prevent_close();
+            }
+        })
         .setup(|app| {
             // Initialize CSV path in user data directory
             let state: State<AppState> = app.state();
@@ -386,11 +590,28 @@ fn main() {
                     eprintln!("Failed to create app data directory: {}", e);
                 }
 
+                // Initialize logging
+                let log_dir = app_data_dir.join("logs");
+                match Logger::init(log_dir.clone()) {
+                    Ok(guard) => {
+                        let mut log_guard = state._log_guard.lock().unwrap();
+                        *log_guard = Some(guard);
+                        
+                        let mut log_path_guard = state.log_path.lock().unwrap();
+                        *log_path_guard = log_dir;
+                        
+                        tracing::info!("Cursor Account Switcher started");
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to initialize logging: {}", e);
+                    }
+                }
+
                 let csv_path = app_data_dir.join("cursor_auth_total.csv");
                 let mut csv_path_guard = state.csv_path.lock().unwrap();
                 *csv_path_guard = csv_path.clone();
 
-                println!("Data will be stored at: {}", csv_path.display());
+                tracing::info!("Data will be stored at: {}", csv_path.display());
             } else {
                 eprintln!("Failed to get app data directory, using current directory");
             }
@@ -398,7 +619,10 @@ fn main() {
             // Auto-detect Cursor path on startup
             if let Ok(path) = PathDetector::detect_cursor_path() {
                 let mut cursor_path = state.cursor_base_path.lock().unwrap();
-                *cursor_path = Some(path);
+                *cursor_path = Some(path.clone());
+                tracing::info!("Cursor path auto-detected: {}", path.display());
+            } else {
+                tracing::warn!("Failed to auto-detect Cursor path");
             }
             Ok(())
         })
