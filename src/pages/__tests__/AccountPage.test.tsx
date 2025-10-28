@@ -211,13 +211,15 @@ describe('AccountPage Component', () => {
     const updateButton = screen.getByRole('button', { name: /update all/i });
     await user.click(updateButton);
 
-    await waitFor(() => {
-      expect(global.mockInvoke).toHaveBeenCalledWith('batch_update_all_accounts');
-      expect(onAccountsUpdate).toHaveBeenCalledWith(updatedAccounts);
-      expect(onRefreshTimeUpdate).toHaveBeenCalled();
-    });
-
-    expect(window.alert).toHaveBeenCalledWith('All accounts updated successfully!');
+    await waitFor(
+      () => {
+        expect(global.mockInvoke).toHaveBeenCalledWith('batch_update_all_accounts');
+        expect(onAccountsUpdate).toHaveBeenCalledWith(updatedAccounts);
+        expect(onRefreshTimeUpdate).toHaveBeenCalled();
+        expect(window.alert).toHaveBeenCalledWith('All accounts updated successfully!');
+      },
+      { timeout: 2000 },
+    );
   });
 
   it('should toggle import modal', async () => {

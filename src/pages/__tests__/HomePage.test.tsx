@@ -169,7 +169,7 @@ describe('HomePage Component', () => {
     });
 
     expect(window.alert).toHaveBeenCalledWith(
-      'Machine ID reset successfully! Please restart Cursor.',
+      'Machine ID reset successfully! Please restart Cursor to apply changes.',
     );
   });
 

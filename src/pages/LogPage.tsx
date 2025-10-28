@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
+import { confirm } from '@tauri-apps/api/dialog';
 import { FileText, Trash2, Download, RefreshCw } from 'lucide-react';
 
 interface LogEntry {
@@ -41,7 +42,12 @@ function LogPage() {
   }, []);
 
   const handleClearLogs = async () => {
-    if (!confirm('Clear all logs?')) {
+    const confirmed = await confirm('Are you sure you want to clear all logs?', {
+      title: 'Confirm Clear',
+      type: 'warning',
+    });
+
+    if (!confirmed) {
       return;
     }
 

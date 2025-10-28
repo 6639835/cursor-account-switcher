@@ -78,6 +78,7 @@ function AccountPage({
 
     try {
       await invoke('delete_account', { email });
+      alert(`Account ${email} deleted successfully!`);
       onRefresh();
     } catch (err) {
       alert('Failed to delete account: ' + err);
@@ -113,14 +114,18 @@ function AccountPage({
     }
   };
 
-  const handleBatchUpdate = async () => {
+  const handleBatchUpdate = async (silent: boolean = false) => {
     try {
       const updated = await invoke<Account[]>('batch_update_all_accounts');
       onAccountsUpdate(updated);
       onRefreshTimeUpdate(new Date());
-      alert('All accounts updated successfully!');
+      if (!silent) {
+        alert('All accounts updated successfully!');
+      }
     } catch (err) {
-      alert('Failed to update accounts: ' + err);
+      if (!silent) {
+        alert('Failed to update accounts: ' + err);
+      }
     }
   };
 
@@ -132,8 +137,8 @@ function AccountPage({
       setImportText('');
       alert(`Successfully imported ${parsed.length} account(s)!`);
 
-      // Auto-update all accounts in the background
-      handleBatchUpdate();
+      // Auto-update all accounts in the background (silently)
+      handleBatchUpdate(true);
     } catch (err) {
       alert('Failed to import accounts: ' + err);
     }
@@ -181,7 +186,7 @@ function AccountPage({
             Import
           </button>
           <button
-            onClick={handleBatchUpdate}
+            onClick={() => handleBatchUpdate()}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
           >

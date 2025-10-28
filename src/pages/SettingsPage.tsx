@@ -75,6 +75,15 @@ function SettingsPage() {
   };
 
   const handleRestartCursor = async () => {
+    const confirmed = await confirm('Are you sure you want to restart Cursor?', {
+      title: 'Confirm Restart',
+      type: 'warning',
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
     try {
       await invoke('restart_cursor_process', { cursorAppPath: null });
       alert('Cursor is starting...');

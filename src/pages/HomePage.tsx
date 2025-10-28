@@ -66,7 +66,7 @@ function HomePage({
 
     try {
       await invoke('reset_machine_id');
-      alert('Machine ID reset successfully! Please restart Cursor.');
+      alert('Machine ID reset successfully! Please restart Cursor to apply changes.');
     } catch (err) {
       alert('Failed to reset machine ID: ' + err);
     }
