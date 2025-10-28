@@ -91,7 +91,8 @@ function LogPage() {
           <h2 className="text-2xl font-bold text-gray-800">Application Logs</h2>
           {logFilePath && (
             <p className="text-sm text-gray-500 mt-1">
-              Log file: <code className="text-xs bg-gray-100 px-2 py-0.5 rounded">{logFilePath}</code>
+              Log file:{' '}
+              <code className="text-xs bg-gray-100 px-2 py-0.5 rounded">{logFilePath}</code>
             </p>
           )}
         </div>

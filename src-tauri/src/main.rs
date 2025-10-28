@@ -14,7 +14,7 @@ mod types;
 use api_client::CursorApiClient;
 use csv_manager::CsvManager;
 use database::Database;
-use logger::{Logger, LogEntry};
+use logger::{LogEntry, Logger};
 use path_detector::PathDetector;
 use process_utils::ProcessManager;
 use reset_machine::MachineIdResetter;
@@ -152,13 +152,11 @@ fn import_accounts(state: State<AppState>, text: String) -> Result<Vec<Account>,
     let csv_path = state.csv_path.lock().unwrap();
     let csv_manager = CsvManager::new(csv_path.clone());
 
-    let result = csv_manager
-        .parse_import_text(&text)
-        .map_err(|e| {
-            tracing::error!("Failed to parse import text: {}", e);
-            e.to_string()
-        })?;
-    
+    let result = csv_manager.parse_import_text(&text).map_err(|e| {
+        tracing::error!("Failed to parse import text: {}", e);
+        e.to_string()
+    })?;
+
     tracing::info!("Successfully parsed {} account(s)", result.len());
     Ok(result)
 }
@@ -211,12 +209,10 @@ fn switch_account(
     if reset_machine {
         tracing::info!("Resetting machine ID");
         let resetter = MachineIdResetter::new(base_path.clone());
-        resetter
-            .reset()
-            .map_err(|e| {
-                tracing::error!("Machine ID reset failed: {}", e);
-                format!("Machine ID reset failed: {}", e)
-            })?;
+        resetter.reset().map_err(|e| {
+            tracing::error!("Machine ID reset failed: {}", e);
+            format!("Machine ID reset failed: {}", e)
+        })?;
     }
 
     tracing::info!("Account switch completed successfully");
@@ -338,7 +334,11 @@ fn batch_update_all_accounts(state: State<AppState>) -> Result<Vec<Account>, Str
         .write_accounts(&accounts)
         .map_err(|e| e.to_string())?;
 
-    tracing::info!("Batch update completed: {} successful, {} failed", success_count, error_count);
+    tracing::info!(
+        "Batch update completed: {} successful, {} failed",
+        success_count,
+        error_count
+    );
     Ok(accounts)
 }
 
@@ -407,7 +407,7 @@ fn sync_current_account(state: State<AppState>) -> Result<(), String> {
 fn get_logs(state: State<AppState>) -> Result<Vec<LogEntry>, String> {
     let log_path = state.log_path.lock().unwrap();
     let logger = Logger::new(log_path.clone());
-    
+
     logger.read_logs().map_err(|e| e.to_string())
 }
 
@@ -415,7 +415,7 @@ fn get_logs(state: State<AppState>) -> Result<Vec<LogEntry>, String> {
 fn clear_logs(state: State<AppState>) -> Result<(), String> {
     let log_path = state.log_path.lock().unwrap();
     let logger = Logger::new(log_path.clone());
-    
+
     logger.clear_logs().map_err(|e| e.to_string())
 }
 
@@ -423,7 +423,7 @@ fn clear_logs(state: State<AppState>) -> Result<(), String> {
 fn get_log_file_path(state: State<AppState>) -> Result<String, String> {
     let log_path = state.log_path.lock().unwrap();
     let logger = Logger::new(log_path.clone());
-    
+
     Ok(logger.get_log_path().to_string_lossy().to_string())
 }
 
@@ -447,7 +447,7 @@ fn build_system_tray() -> SystemTray {
     let sync = CustomMenuItem::new("sync".to_string(), "Sync Current Account");
     let refresh = CustomMenuItem::new("refresh".to_string(), "Refresh All Accounts");
     let quit = CustomMenuItem::new("quit".to_string(), "Quit");
-    
+
     let tray_menu = SystemTrayMenu::new()
         .add_item(show)
         .add_item(hide)
@@ -456,7 +456,7 @@ fn build_system_tray() -> SystemTray {
         .add_item(refresh)
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(quit);
-    
+
     SystemTray::new().with_menu(tray_menu)
 }
 
@@ -596,10 +596,10 @@ fn main() {
                     Ok(guard) => {
                         let mut log_guard = state._log_guard.lock().unwrap();
                         *log_guard = Some(guard);
-                        
+
                         let mut log_path_guard = state.log_path.lock().unwrap();
                         *log_path_guard = log_dir;
-                        
+
                         tracing::info!("Cursor Account Switcher started");
                     }
                     Err(e) => {

@@ -34,12 +34,11 @@ impl Logger {
             .create(true)
             .append(true)
             .open(log_dir.join("app.log"))?;
-        
+
         let (non_blocking, guard) = tracing_appender::non_blocking(log_file);
 
         // Create filter (INFO level by default)
-        let filter = EnvFilter::try_from_default_env()
-            .unwrap_or_else(|_| EnvFilter::new("info"));
+        let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
         // Set up logging to file
         let file_layer = fmt::layer()
@@ -98,10 +97,10 @@ impl Logger {
     fn parse_log_line(&self, line: &str) -> Option<LogEntry> {
         // Expected format: "2023-10-28T12:34:56.789Z  INFO message here"
         // Note: There are two spaces between timestamp and level
-        
+
         // Split by whitespace and filter out empty strings
         let parts: Vec<&str> = line.split_whitespace().collect();
-        
+
         if parts.len() >= 3 {
             let timestamp = parts[0].to_string();
             let level = parts[1].to_string();
@@ -168,4 +167,3 @@ macro_rules! log_debug {
         tracing::debug!($($arg)*);
     };
 }
-
