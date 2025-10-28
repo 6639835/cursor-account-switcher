@@ -5,6 +5,11 @@ import AccountPage from '../AccountPage';
 import { createMockAccount } from '../../test/utils';
 import type { Account } from '../../types';
 
+// Mock Tauri dialog API
+vi.mock('@tauri-apps/api/dialog', () => ({
+  confirm: vi.fn(),
+}));
+
 // Helper function to render AccountPage with default props
 const renderAccountPage = (
   props: {
@@ -33,10 +38,11 @@ const renderAccountPage = (
 };
 
 describe('AccountPage Component', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     global.mockInvoke.mockReset();
-    window.confirm = vi.fn(() => true);
     window.alert = vi.fn();
+    const { confirm } = await import('@tauri-apps/api/dialog');
+    vi.mocked(confirm).mockResolvedValue(true);
   });
 
   it('should render accounts page title', () => {
@@ -73,6 +79,7 @@ describe('AccountPage Component', () => {
     const user = userEvent.setup();
     const mockAccounts = [createMockAccount()];
     const onRefresh = vi.fn();
+    const { confirm } = await import('@tauri-apps/api/dialog');
 
     global.mockInvoke.mockResolvedValue(undefined); // delete
 
@@ -86,7 +93,7 @@ describe('AccountPage Component', () => {
     const deleteButton = screen.getByTitle('Delete account');
     await user.click(deleteButton);
 
-    expect(window.confirm).toHaveBeenCalled();
+    expect(confirm).toHaveBeenCalled();
 
     await waitFor(() => {
       expect(global.mockInvoke).toHaveBeenCalledWith('delete_account', {
@@ -98,7 +105,8 @@ describe('AccountPage Component', () => {
 
   it('should not delete account if user cancels', async () => {
     const user = userEvent.setup();
-    window.confirm = vi.fn(() => false);
+    const { confirm } = await import('@tauri-apps/api/dialog');
+    vi.mocked(confirm).mockResolvedValue(false);
     const mockAccounts = [createMockAccount()];
 
     renderAccountPage({ accounts: mockAccounts });
@@ -116,13 +124,14 @@ describe('AccountPage Component', () => {
 
     if (deleteButton) {
       await user.click(deleteButton);
-      expect(window.confirm).toHaveBeenCalled();
+      expect(confirm).toHaveBeenCalled();
       expect(global.mockInvoke).not.toHaveBeenCalledWith('delete_account', expect.any(Object));
     }
   });
 
   it('should handle account switching', async () => {
     const user = userEvent.setup();
+    const { confirm } = await import('@tauri-apps/api/dialog');
     const mockAccount = createMockAccount({
       email: 'switch@example.com',
       access_token: 'access_123',
@@ -153,7 +162,7 @@ describe('AccountPage Component', () => {
     if (switchButton) {
       await user.click(switchButton);
 
-      expect(window.confirm).toHaveBeenCalled();
+      expect(confirm).toHaveBeenCalled();
 
       await waitFor(() => {
         expect(global.mockInvoke).toHaveBeenCalledWith('switch_account', {

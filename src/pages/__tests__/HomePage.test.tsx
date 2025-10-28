@@ -4,14 +4,20 @@ import userEvent from '@testing-library/user-event';
 import HomePage from '../HomePage';
 import { createMockAccountInfo, createMockUsageInfo } from '../../test/utils';
 
+// Mock Tauri dialog API
+vi.mock('@tauri-apps/api/dialog', () => ({
+  confirm: vi.fn(),
+}));
+
 describe('HomePage Component', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     global.mockInvoke.mockReset();
     // Set up default mock implementation
     global.mockInvoke.mockResolvedValue(undefined);
     // Reset window methods
-    window.confirm = vi.fn(() => true);
     window.alert = vi.fn();
+    const { confirm } = await import('@tauri-apps/api/dialog');
+    vi.mocked(confirm).mockResolvedValue(true);
   });
 
   it('should render dashboard title', () => {
@@ -135,6 +141,7 @@ describe('HomePage Component', () => {
 
   it('should handle machine ID reset with confirmation', async () => {
     const user = userEvent.setup();
+    const { confirm } = await import('@tauri-apps/api/dialog');
     const mockAccountInfo = createMockAccountInfo();
     const mockUsageInfo = createMockUsageInfo();
     const mockRefresh = vi.fn();
@@ -155,7 +162,7 @@ describe('HomePage Component', () => {
     const resetButton = screen.getByRole('button', { name: /reset machine id/i });
     await user.click(resetButton);
 
-    expect(window.confirm).toHaveBeenCalled();
+    expect(confirm).toHaveBeenCalled();
 
     await waitFor(() => {
       expect(global.mockInvoke).toHaveBeenCalledWith('reset_machine_id');
@@ -168,11 +175,11 @@ describe('HomePage Component', () => {
 
   it('should not reset machine ID if user cancels', async () => {
     const user = userEvent.setup();
+    const { confirm } = await import('@tauri-apps/api/dialog');
+    vi.mocked(confirm).mockResolvedValue(false);
     const mockAccountInfo = createMockAccountInfo();
     const mockUsageInfo = createMockUsageInfo();
     const mockRefresh = vi.fn();
-
-    window.confirm = vi.fn(() => false);
 
     render(
       <HomePage
@@ -188,7 +195,7 @@ describe('HomePage Component', () => {
     const resetButton = screen.getByRole('button', { name: /reset machine id/i });
     await user.click(resetButton);
 
-    expect(window.confirm).toHaveBeenCalled();
+    expect(confirm).toHaveBeenCalled();
     expect(global.mockInvoke).not.toHaveBeenCalledWith('reset_machine_id');
   });
 

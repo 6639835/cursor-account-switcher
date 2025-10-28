@@ -119,31 +119,61 @@ fn get_all_accounts(state: State<AppState>) -> Result<Vec<Account>, String> {
 }
 
 #[tauri::command]
-fn add_account(state: State<AppState>, account: Account) -> Result<(), String> {
-    let csv_path = state.csv_path.lock().unwrap();
-    let csv_manager = CsvManager::new(csv_path.clone());
-
-    csv_manager.add_account(account).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-fn delete_account(state: State<AppState>, email: String) -> Result<bool, String> {
+fn add_account(
+    app: tauri::AppHandle,
+    state: State<AppState>,
+    account: Account,
+) -> Result<(), String> {
     let csv_path = state.csv_path.lock().unwrap();
     let csv_manager = CsvManager::new(csv_path.clone());
 
     csv_manager
+        .add_account(account)
+        .map_err(|e| e.to_string())?;
+
+    // Update tray menu
+    update_tray_menu(&app);
+
+    Ok(())
+}
+
+#[tauri::command]
+fn delete_account(
+    app: tauri::AppHandle,
+    state: State<AppState>,
+    email: String,
+) -> Result<bool, String> {
+    let csv_path = state.csv_path.lock().unwrap();
+    let csv_manager = CsvManager::new(csv_path.clone());
+
+    let result = csv_manager
         .delete_account(&email)
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    // Update tray menu
+    update_tray_menu(&app);
+
+    Ok(result)
 }
 
 #[tauri::command]
-fn update_account(state: State<AppState>, email: String, account: Account) -> Result<bool, String> {
+fn update_account(
+    app: tauri::AppHandle,
+    state: State<AppState>,
+    email: String,
+    account: Account,
+) -> Result<bool, String> {
     let csv_path = state.csv_path.lock().unwrap();
     let csv_manager = CsvManager::new(csv_path.clone());
 
-    csv_manager
+    let result = csv_manager
         .update_account(&email, account)
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    // Update tray menu
+    update_tray_menu(&app);
+
+    Ok(result)
 }
 
 #[tauri::command]
@@ -162,7 +192,11 @@ fn import_accounts(state: State<AppState>, text: String) -> Result<Vec<Account>,
 }
 
 #[tauri::command]
-fn batch_add_accounts(state: State<AppState>, accounts: Vec<Account>) -> Result<(), String> {
+fn batch_add_accounts(
+    app: tauri::AppHandle,
+    state: State<AppState>,
+    accounts: Vec<Account>,
+) -> Result<(), String> {
     let csv_path = state.csv_path.lock().unwrap();
     let csv_manager = CsvManager::new(csv_path.clone());
 
@@ -171,6 +205,9 @@ fn batch_add_accounts(state: State<AppState>, accounts: Vec<Account>) -> Result<
             .add_account(account)
             .map_err(|e| e.to_string())?;
     }
+
+    // Update tray menu
+    update_tray_menu(&app);
 
     Ok(())
 }
@@ -455,9 +492,82 @@ fn build_system_tray() -> SystemTray {
         .add_item(sync)
         .add_item(refresh)
         .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(CustomMenuItem::new("accounts_header".to_string(), "Switch Account").disabled())
+        .add_item(CustomMenuItem::new("no_accounts".to_string(), "  Loading...").disabled())
+        .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(quit);
 
     SystemTray::new().with_menu(tray_menu)
+}
+
+// Build tray menu with account list
+fn build_tray_menu_with_accounts(accounts: &[Account]) -> SystemTrayMenu {
+    let show = CustomMenuItem::new("show".to_string(), "Show Window");
+    let hide = CustomMenuItem::new("hide".to_string(), "Hide Window");
+    let sync = CustomMenuItem::new("sync".to_string(), "Sync Current Account");
+    let refresh = CustomMenuItem::new("refresh".to_string(), "Refresh All Accounts");
+    let quit = CustomMenuItem::new("quit".to_string(), "Quit");
+
+    let mut tray_menu = SystemTrayMenu::new()
+        .add_item(show)
+        .add_item(hide)
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(sync)
+        .add_item(refresh)
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(CustomMenuItem::new("accounts_header".to_string(), "Switch Account").disabled());
+
+    // Add accounts to menu
+    if accounts.is_empty() {
+        tray_menu = tray_menu.add_item(
+            CustomMenuItem::new("no_accounts".to_string(), "  No accounts available").disabled(),
+        );
+    } else {
+        // Limit to first 10 accounts to avoid overcrowding
+        for (idx, account) in accounts.iter().take(10).enumerate() {
+            let display_text = format!("  {}", account.email);
+            let item_id = format!("account_{}", idx);
+            tray_menu = tray_menu.add_item(CustomMenuItem::new(item_id, display_text));
+        }
+
+        if accounts.len() > 10 {
+            tray_menu = tray_menu.add_item(
+                CustomMenuItem::new(
+                    "more_accounts".to_string(),
+                    format!("  ... and {} more", accounts.len() - 10),
+                )
+                .disabled(),
+            );
+        }
+    }
+
+    tray_menu = tray_menu
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(quit);
+
+    tray_menu
+}
+
+// Update the system tray menu with current accounts
+fn update_tray_menu(app: &tauri::AppHandle) {
+    let state: State<AppState> = app.state();
+
+    // Get accounts
+    let accounts = match get_all_accounts(state) {
+        Ok(accounts) => accounts,
+        Err(e) => {
+            tracing::error!("Failed to get accounts for tray menu: {}", e);
+            Vec::new()
+        }
+    };
+
+    // Build new menu
+    let new_menu = build_tray_menu_with_accounts(&accounts);
+
+    // Update tray
+    if let Err(e) = app.tray_handle().set_menu(new_menu) {
+        tracing::error!("Failed to update tray menu: {}", e);
+    }
 }
 
 fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
@@ -522,6 +632,8 @@ fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
                     match batch_update_all_accounts(state) {
                         Ok(accounts) => {
                             tracing::info!("Refreshed {} accounts from tray", accounts.len());
+                            // Update tray menu with refreshed accounts
+                            update_tray_menu(app);
                             // Notify frontend if window is open
                             if let Some(window) = app.get_window("main") {
                                 let _ = window.emit("accounts-refreshed", ());
@@ -534,6 +646,52 @@ fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
                 }
                 "quit" => {
                     std::process::exit(0);
+                }
+                id if id.starts_with("account_") => {
+                    // Extract account index from id
+                    if let Some(idx_str) = id.strip_prefix("account_") {
+                        if let Ok(idx) = idx_str.parse::<usize>() {
+                            // Get accounts and switch to the selected one
+                            let state: State<AppState> = app.state();
+                            match get_all_accounts(state.clone()) {
+                                Ok(accounts) => {
+                                    if let Some(account) = accounts.get(idx) {
+                                        tracing::info!(
+                                            "Switching to account from tray: {}",
+                                            account.email
+                                        );
+
+                                        // Switch account with default reset_machine = false
+                                        match switch_account(
+                                            state,
+                                            account.email.clone(),
+                                            account.access_token.clone(),
+                                            account.refresh_token.clone(),
+                                            false,
+                                        ) {
+                                            Ok(_) => {
+                                                tracing::info!(
+                                                    "Successfully switched to account: {}",
+                                                    account.email
+                                                );
+                                                // Notify frontend if window is open
+                                                if let Some(window) = app.get_window("main") {
+                                                    let _ = window
+                                                        .emit("account-switched", &account.email);
+                                                }
+                                            }
+                                            Err(e) => {
+                                                tracing::error!("Failed to switch account: {}", e);
+                                            }
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    tracing::error!("Failed to get accounts: {}", e);
+                                }
+                            }
+                        }
+                    }
                 }
                 _ => {}
             }
@@ -624,6 +782,11 @@ fn main() {
             } else {
                 tracing::warn!("Failed to auto-detect Cursor path");
             }
+
+            // Initialize tray menu with current accounts
+            update_tray_menu(&app.handle());
+            tracing::info!("Tray menu initialized with accounts");
+
             Ok(())
         })
         .run(tauri::generate_context!())

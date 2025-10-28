@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
+import { confirm } from '@tauri-apps/api/dialog';
 import { Folder, RotateCcw, Power, PlayCircle, Info } from 'lucide-react';
 import { APP_VERSION } from '../version';
 
@@ -32,7 +33,15 @@ function SettingsPage() {
   };
 
   const handleResetMachineId = async () => {
-    if (!confirm('Are you sure you want to reset the machine ID? This will close Cursor.')) {
+    const confirmed = await confirm(
+      'Are you sure you want to reset the machine ID? This will close Cursor.',
+      {
+        title: 'Confirm Reset',
+        type: 'warning',
+      },
+    );
+
+    if (!confirmed) {
       return;
     }
 
@@ -48,7 +57,12 @@ function SettingsPage() {
   };
 
   const handleKillCursor = async () => {
-    if (!confirm('Are you sure you want to close Cursor?')) {
+    const confirmed = await confirm('Are you sure you want to close Cursor?', {
+      title: 'Confirm Kill',
+      type: 'warning',
+    });
+
+    if (!confirmed) {
       return;
     }
 

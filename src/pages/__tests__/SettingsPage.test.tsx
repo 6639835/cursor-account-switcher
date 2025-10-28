@@ -2,11 +2,17 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import SettingsPage from '../SettingsPage';
 
+// Mock Tauri dialog API
+vi.mock('@tauri-apps/api/dialog', () => ({
+  confirm: vi.fn(),
+}));
+
 describe('SettingsPage Component', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     global.mockInvoke.mockReset();
-    window.confirm = vi.fn(() => true);
     window.alert = vi.fn();
+    const { confirm } = await import('@tauri-apps/api/dialog');
+    vi.mocked(confirm).mockResolvedValue(true);
   });
 
   it('should render settings page title', () => {
