@@ -67,16 +67,12 @@ impl MachineIdResetter {
         let content = fs::read_to_string(storage_path)?;
         let mut storage: Value = serde_json::from_str(&content)?;
 
-        // Ensure telemetry section exists
-        if storage.get("telemetry").is_none() {
-            storage["telemetry"] = serde_json::json!({});
-        }
-
-        // Update machine IDs
-        storage["telemetry"]["machineId"] = Value::String(new_ids.machine_id.clone());
-        storage["telemetry"]["macMachineId"] = Value::String(new_ids.mac_machine_id.clone());
-        storage["telemetry"]["devDeviceId"] = Value::String(new_ids.dev_device_id.clone());
-        storage["telemetry"]["sqmId"] = Value::String(new_ids.sqm_id.clone());
+        // Update machine IDs using flat keys (not nested objects)
+        // The correct format is "telemetry.machineId" as a key, not storage["telemetry"]["machineId"]
+        storage["telemetry.machineId"] = Value::String(new_ids.machine_id.clone());
+        storage["telemetry.macMachineId"] = Value::String(new_ids.mac_machine_id.clone());
+        storage["telemetry.devDeviceId"] = Value::String(new_ids.dev_device_id.clone());
+        storage["telemetry.sqmId"] = Value::String(new_ids.sqm_id.clone());
 
         // Write back to file
         let updated_content = serde_json::to_string_pretty(&storage)?;

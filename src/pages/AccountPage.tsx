@@ -86,6 +86,12 @@ function AccountPage({
   };
 
   const handleSwitch = async (account: Account) => {
+    // Check if switching to the already active account
+    if (accountInfo && accountInfo.email === account.email) {
+      alert('This account is already active!');
+      return;
+    }
+
     const confirmed = await confirm(`Switch to account ${account.email}?`, {
       title: 'Confirm Switch',
       type: 'info',

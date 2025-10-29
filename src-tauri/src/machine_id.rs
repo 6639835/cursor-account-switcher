@@ -5,8 +5,16 @@ pub struct MachineIdGenerator;
 
 impl MachineIdGenerator {
     pub fn generate() -> MachineIds {
-        let machine_id = Uuid::new_v4().to_string();
-        let mac_machine_id = Uuid::new_v4().to_string();
+        // Generate 64-character hex IDs (two UUIDs concatenated without dashes)
+        let machine_id = format!("{}{}", 
+            Uuid::new_v4().simple().to_string(),
+            Uuid::new_v4().simple().to_string()
+        );
+        let mac_machine_id = format!("{}{}", 
+            Uuid::new_v4().simple().to_string(),
+            Uuid::new_v4().simple().to_string()
+        );
+        // devDeviceId uses standard UUID format
         let dev_device_id = Uuid::new_v4().to_string();
         let sqm_id = format!("{{{}}}", Uuid::new_v4().to_string().to_uppercase());
 
@@ -60,9 +68,15 @@ mod tests {
         assert!(!ids.dev_device_id.is_empty());
         assert!(!ids.sqm_id.is_empty());
 
-        // Validate UUID format (basic check)
-        assert!(ids.machine_id.contains('-'));
-        assert!(ids.mac_machine_id.contains('-'));
+        // Validate machineId and macMachineId are 64-character hex strings (no dashes)
+        assert_eq!(ids.machine_id.len(), 64);
+        assert_eq!(ids.mac_machine_id.len(), 64);
+        assert!(!ids.machine_id.contains('-'));
+        assert!(!ids.mac_machine_id.contains('-'));
+        assert!(ids.machine_id.chars().all(|c| c.is_ascii_hexdigit()));
+        assert!(ids.mac_machine_id.chars().all(|c| c.is_ascii_hexdigit()));
+
+        // Validate devDeviceId has standard UUID format (with dashes)
         assert!(ids.dev_device_id.contains('-'));
 
         // Validate sqm_id has braces and is uppercase
