@@ -500,8 +500,8 @@ fn build_system_tray() -> SystemTray {
     SystemTray::new().with_menu(tray_menu)
 }
 
-// Build tray menu with account list
-fn build_tray_menu_with_accounts(accounts: &[Account]) -> SystemTrayMenu {
+// Build tray menu with account list and current account
+fn build_tray_menu_with_accounts(accounts: &[Account], current_email: Option<String>) -> SystemTrayMenu {
     let show = CustomMenuItem::new("show".to_string(), "Show Window");
     let hide = CustomMenuItem::new("hide".to_string(), "Hide Window");
     let sync = CustomMenuItem::new("sync".to_string(), "Sync Current Account");
@@ -511,6 +511,21 @@ fn build_tray_menu_with_accounts(accounts: &[Account]) -> SystemTrayMenu {
     let mut tray_menu = SystemTrayMenu::new()
         .add_item(show)
         .add_item(hide)
+        .add_native_item(SystemTrayMenuItem::Separator);
+
+    // Add current account display
+    if let Some(email) = current_email {
+        let current_account_text = format!("Current: {}", email);
+        tray_menu = tray_menu.add_item(
+            CustomMenuItem::new("current_account".to_string(), current_account_text).disabled()
+        );
+    } else {
+        tray_menu = tray_menu.add_item(
+            CustomMenuItem::new("current_account".to_string(), "Current: No account logged in").disabled()
+        );
+    }
+
+    tray_menu = tray_menu
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(sync)
         .add_item(refresh)
@@ -553,7 +568,7 @@ fn update_tray_menu(app: &tauri::AppHandle) {
     let state: State<AppState> = app.state();
 
     // Get accounts
-    let accounts = match get_all_accounts(state) {
+    let accounts = match get_all_accounts(state.clone()) {
         Ok(accounts) => accounts,
         Err(e) => {
             tracing::error!("Failed to get accounts for tray menu: {}", e);
@@ -561,8 +576,24 @@ fn update_tray_menu(app: &tauri::AppHandle) {
         }
     };
 
+    // Get current account email
+    let current_email = {
+        let cursor_path = state.cursor_base_path.lock().unwrap();
+        if let Some(base_path) = cursor_path.as_ref() {
+            let db_path = PathDetector::get_db_path(base_path);
+            let db = Database::new(db_path);
+            
+            match db.get_auth_info() {
+                Ok((email, _)) => Some(email),
+                Err(_) => None,
+            }
+        } else {
+            None
+        }
+    };
+
     // Build new menu
-    let new_menu = build_tray_menu_with_accounts(&accounts);
+    let new_menu = build_tray_menu_with_accounts(&accounts, current_email);
 
     // Update tray
     if let Err(e) = app.tray_handle().set_menu(new_menu) {
@@ -674,6 +705,8 @@ fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
                                                     "Successfully switched to account: {}",
                                                     account.email
                                                 );
+                                                // Update tray menu to show new current account
+                                                update_tray_menu(app);
                                                 // Notify frontend if window is open
                                                 if let Some(window) = app.get_window("main") {
                                                     let _ = window
