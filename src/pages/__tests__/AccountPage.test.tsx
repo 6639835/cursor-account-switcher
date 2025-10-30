@@ -8,6 +8,7 @@ import type { Account } from '../../types';
 // Mock Tauri dialog API
 vi.mock('@tauri-apps/api/dialog', () => ({
   confirm: vi.fn(),
+  ask: vi.fn(),
 }));
 
 // Helper function to render AccountPage with default props
@@ -41,8 +42,9 @@ describe('AccountPage Component', () => {
   beforeEach(async () => {
     global.mockInvoke.mockReset();
     window.alert = vi.fn();
-    const { confirm } = await import('@tauri-apps/api/dialog');
+    const { confirm, ask } = await import('@tauri-apps/api/dialog');
     vi.mocked(confirm).mockResolvedValue(true);
+    vi.mocked(ask).mockResolvedValue(true);
   });
 
   it('should render accounts page title', () => {
@@ -79,7 +81,7 @@ describe('AccountPage Component', () => {
     const user = userEvent.setup();
     const mockAccounts = [createMockAccount()];
     const onRefresh = vi.fn();
-    const { confirm } = await import('@tauri-apps/api/dialog');
+    const { ask } = await import('@tauri-apps/api/dialog');
 
     global.mockInvoke.mockResolvedValue(undefined); // delete
 
@@ -93,7 +95,7 @@ describe('AccountPage Component', () => {
     const deleteButton = screen.getByTitle('Delete account');
     await user.click(deleteButton);
 
-    expect(confirm).toHaveBeenCalled();
+    expect(ask).toHaveBeenCalled();
 
     await waitFor(() => {
       expect(global.mockInvoke).toHaveBeenCalledWith('delete_account', {
@@ -105,8 +107,8 @@ describe('AccountPage Component', () => {
 
   it('should not delete account if user cancels', async () => {
     const user = userEvent.setup();
-    const { confirm } = await import('@tauri-apps/api/dialog');
-    vi.mocked(confirm).mockResolvedValue(false);
+    const { ask } = await import('@tauri-apps/api/dialog');
+    vi.mocked(ask).mockResolvedValue(false);
     const mockAccounts = [createMockAccount()];
 
     renderAccountPage({ accounts: mockAccounts });
@@ -124,7 +126,7 @@ describe('AccountPage Component', () => {
 
     if (deleteButton) {
       await user.click(deleteButton);
-      expect(confirm).toHaveBeenCalled();
+      expect(ask).toHaveBeenCalled();
       expect(global.mockInvoke).not.toHaveBeenCalledWith('delete_account', expect.any(Object));
     }
   });

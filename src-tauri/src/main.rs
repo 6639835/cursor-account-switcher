@@ -464,7 +464,10 @@ fn build_system_tray() -> SystemTray {
 }
 
 // Build tray menu with account list and current account
-fn build_tray_menu_with_accounts(accounts: &[Account], current_email: Option<String>) -> SystemTrayMenu {
+fn build_tray_menu_with_accounts(
+    accounts: &[Account],
+    current_email: Option<String>,
+) -> SystemTrayMenu {
     let show = CustomMenuItem::new("show".to_string(), "Show Window");
     let hide = CustomMenuItem::new("hide".to_string(), "Hide Window");
     let sync = CustomMenuItem::new("sync".to_string(), "Sync Current Account");
@@ -480,11 +483,15 @@ fn build_tray_menu_with_accounts(accounts: &[Account], current_email: Option<Str
     if let Some(email) = current_email {
         let current_account_text = format!("Current: {}", email);
         tray_menu = tray_menu.add_item(
-            CustomMenuItem::new("current_account".to_string(), current_account_text).disabled()
+            CustomMenuItem::new("current_account".to_string(), current_account_text).disabled(),
         );
     } else {
         tray_menu = tray_menu.add_item(
-            CustomMenuItem::new("current_account".to_string(), "Current: No account logged in").disabled()
+            CustomMenuItem::new(
+                "current_account".to_string(),
+                "Current: No account logged in",
+            )
+            .disabled(),
         );
     }
 
@@ -545,7 +552,7 @@ fn update_tray_menu(app: &tauri::AppHandle) {
         if let Some(base_path) = cursor_path.as_ref() {
             let db_path = PathDetector::get_db_path(base_path);
             let db = Database::new(db_path);
-            
+
             match db.get_auth_info() {
                 Ok((email, _)) => Some(email),
                 Err(_) => None,

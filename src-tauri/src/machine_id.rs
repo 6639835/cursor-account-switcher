@@ -6,14 +6,8 @@ pub struct MachineIdGenerator;
 impl MachineIdGenerator {
     pub fn generate() -> MachineIds {
         // Generate 64-character hex IDs (two UUIDs concatenated without dashes)
-        let machine_id = format!("{}{}", 
-            Uuid::new_v4().simple().to_string(),
-            Uuid::new_v4().simple().to_string()
-        );
-        let mac_machine_id = format!("{}{}", 
-            Uuid::new_v4().simple().to_string(),
-            Uuid::new_v4().simple().to_string()
-        );
+        let machine_id = format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple());
+        let mac_machine_id = format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple());
         // devDeviceId uses standard UUID format
         let dev_device_id = Uuid::new_v4().to_string();
         let sqm_id = format!("{{{}}}", Uuid::new_v4().to_string().to_uppercase());
