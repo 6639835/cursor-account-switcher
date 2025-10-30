@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-import { confirm } from '@tauri-apps/api/dialog';
+import { ask } from '@tauri-apps/api/dialog';
 import { Account, AccountInfo } from '../types';
 import {
   RefreshCw,
@@ -67,7 +67,7 @@ function AccountPage({
   }, []);
 
   const handleDelete = async (email: string) => {
-    const confirmed = await confirm(`Delete account ${email}?`, {
+    const confirmed = await ask(`Delete account ${email}?`, {
       title: 'Confirm Delete',
       type: 'warning',
     });
@@ -92,7 +92,7 @@ function AccountPage({
       return;
     }
 
-    const confirmed = await confirm(`Switch to account ${account.email}?`, {
+    const confirmed = await ask(`Switch to account ${account.email}?`, {
       title: 'Confirm Switch',
       type: 'info',
     });

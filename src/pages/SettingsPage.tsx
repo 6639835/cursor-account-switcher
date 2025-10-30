@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-import { confirm } from '@tauri-apps/api/dialog';
+import { ask } from '@tauri-apps/api/dialog';
 import { Folder, RotateCcw, Power, PlayCircle, Info } from 'lucide-react';
 import { APP_VERSION } from '../version';
 
@@ -33,7 +33,7 @@ function SettingsPage() {
   };
 
   const handleResetMachineId = async () => {
-    const confirmed = await confirm(
+    const confirmed = await ask(
       'Are you sure you want to reset the machine ID? This will close Cursor.',
       {
         title: 'Confirm Reset',
@@ -57,7 +57,7 @@ function SettingsPage() {
   };
 
   const handleKillCursor = async () => {
-    const confirmed = await confirm('Are you sure you want to close Cursor?', {
+    const confirmed = await ask('Are you sure you want to close Cursor?', {
       title: 'Confirm Kill',
       type: 'warning',
     });
@@ -75,7 +75,7 @@ function SettingsPage() {
   };
 
   const handleRestartCursor = async () => {
-    const confirmed = await confirm('Are you sure you want to restart Cursor?', {
+    const confirmed = await ask('Are you sure you want to restart Cursor?', {
       title: 'Confirm Restart',
       type: 'warning',
     });

@@ -119,61 +119,31 @@ fn get_all_accounts(state: State<AppState>) -> Result<Vec<Account>, String> {
 }
 
 #[tauri::command]
-fn add_account(
-    app: tauri::AppHandle,
-    state: State<AppState>,
-    account: Account,
-) -> Result<(), String> {
+fn add_account(state: State<AppState>, account: Account) -> Result<(), String> {
+    let csv_path = state.csv_path.lock().unwrap();
+    let csv_manager = CsvManager::new(csv_path.clone());
+
+    csv_manager.add_account(account).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn delete_account(state: State<AppState>, email: String) -> Result<bool, String> {
     let csv_path = state.csv_path.lock().unwrap();
     let csv_manager = CsvManager::new(csv_path.clone());
 
     csv_manager
-        .add_account(account)
-        .map_err(|e| e.to_string())?;
-
-    // Update tray menu
-    update_tray_menu(&app);
-
-    Ok(())
-}
-
-#[tauri::command]
-fn delete_account(
-    app: tauri::AppHandle,
-    state: State<AppState>,
-    email: String,
-) -> Result<bool, String> {
-    let csv_path = state.csv_path.lock().unwrap();
-    let csv_manager = CsvManager::new(csv_path.clone());
-
-    let result = csv_manager
         .delete_account(&email)
-        .map_err(|e| e.to_string())?;
-
-    // Update tray menu
-    update_tray_menu(&app);
-
-    Ok(result)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn update_account(
-    app: tauri::AppHandle,
-    state: State<AppState>,
-    email: String,
-    account: Account,
-) -> Result<bool, String> {
+fn update_account(state: State<AppState>, email: String, account: Account) -> Result<bool, String> {
     let csv_path = state.csv_path.lock().unwrap();
     let csv_manager = CsvManager::new(csv_path.clone());
 
-    let result = csv_manager
+    csv_manager
         .update_account(&email, account)
-        .map_err(|e| e.to_string())?;
-
-    // Update tray menu
-    update_tray_menu(&app);
-
-    Ok(result)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -192,11 +162,7 @@ fn import_accounts(state: State<AppState>, text: String) -> Result<Vec<Account>,
 }
 
 #[tauri::command]
-fn batch_add_accounts(
-    app: tauri::AppHandle,
-    state: State<AppState>,
-    accounts: Vec<Account>,
-) -> Result<(), String> {
+fn batch_add_accounts(state: State<AppState>, accounts: Vec<Account>) -> Result<(), String> {
     let csv_path = state.csv_path.lock().unwrap();
     let csv_manager = CsvManager::new(csv_path.clone());
 
@@ -205,9 +171,6 @@ fn batch_add_accounts(
             .add_account(account)
             .map_err(|e| e.to_string())?;
     }
-
-    // Update tray menu
-    update_tray_menu(&app);
 
     Ok(())
 }

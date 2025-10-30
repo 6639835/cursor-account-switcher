@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-import { confirm } from '@tauri-apps/api/dialog';
+import { ask } from '@tauri-apps/api/dialog';
 import { AccountInfo, UsageInfo } from '../types';
 import { RefreshCw, User, Calendar, TrendingUp, DollarSign, Clock } from 'lucide-react';
 
@@ -52,7 +52,7 @@ function HomePage({
   }, []);
 
   const handleResetMachineId = async () => {
-    const confirmed = await confirm(
+    const confirmed = await ask(
       'Are you sure you want to reset the machine ID? This will close Cursor.',
       {
         title: 'Confirm Reset',
