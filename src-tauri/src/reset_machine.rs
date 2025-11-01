@@ -36,6 +36,24 @@ impl MachineIdResetter {
         // Update storage.json
         self.update_storage_file(&storage_path, &new_ids)?;
 
+        // Update main.js file on macOS to replace ioreg command
+        #[cfg(target_os = "macos")]
+        {
+            if let Err(e) = self.update_main_js_file_macos() {
+                eprintln!("Warning: Failed to update main.js: {}", e);
+                eprintln!("Machine ID reset will continue, but main.js modification failed.");
+            }
+        }
+
+        // Update main.js file on Windows to replace registry command
+        #[cfg(target_os = "windows")]
+        {
+            if let Err(e) = self.update_main_js_file_windows() {
+                eprintln!("Warning: Failed to update main.js: {}", e);
+                eprintln!("Machine ID reset will continue, but main.js modification failed.");
+            }
+        }
+
         // Update Windows registry if on Windows (no-op on other platforms)
         if let Err(e) = crate::machine_id::update_registry_machine_guid() {
             eprintln!("Warning: Failed to update registry: {}", e);
@@ -77,6 +95,104 @@ impl MachineIdResetter {
         // Write back to file
         let updated_content = serde_json::to_string_pretty(&storage)?;
         fs::write(storage_path, updated_content)?;
+
+        Ok(())
+    }
+
+    /// Update main.js file on macOS to replace ioreg command with uuidgen
+    /// This prevents Cursor from reading hardware-based machine ID
+    #[cfg(target_os = "macos")]
+    fn update_main_js_file_macos(&self) -> Result<()> {
+        let main_js_path =
+            PathBuf::from("/Applications/Cursor.app/Contents/Resources/app/out/main.js");
+
+        if !main_js_path.exists() {
+            anyhow::bail!("main.js not found at: {:?}", main_js_path);
+        }
+
+        // Backup main.js
+        let timestamp = Local::now().format("%Y%m%d_%H%M%S");
+        let backup_name = format!("main.js.backup_{}", timestamp);
+        let backup_path = main_js_path.with_file_name(backup_name);
+        fs::copy(&main_js_path, &backup_path).context("Failed to backup main.js")?;
+
+        // Read main.js content
+        let content = fs::read_to_string(&main_js_path)?;
+
+        // Replace ioreg command with uuidgen command
+        // Original: ioreg -rd1 -c IOPlatformExpertDevice
+        // Replacement: UUID=$(uuidgen | tr '[:upper:]' '[:lower:]');echo \"IOPlatformUUID = \"$UUID\";
+        let old_pattern = "ioreg -rd1 -c IOPlatformExpertDevice";
+        let new_pattern =
+            r#"UUID=$(uuidgen | tr '[:upper:]' '[:lower:]');echo \"IOPlatformUUID = \"$UUID\";"#;
+
+        let updated_content = content.replace(old_pattern, new_pattern);
+
+        // Write back to file
+        fs::write(&main_js_path, updated_content)?;
+
+        // Verify the replacement was successful
+        let verify_content = fs::read_to_string(&main_js_path)?;
+        if verify_content.contains(r#"darwin:"UUID=$(uuidgen"#) {
+            println!("main.js file modified successfully");
+        } else {
+            eprintln!("Warning: main.js file may not have been correctly modified");
+            eprintln!("You can restore from backup: {:?}", backup_path);
+        }
+
+        Ok(())
+    }
+
+    /// Update main.js file on Windows to replace registry query command with PowerShell
+    /// This prevents Cursor from reading hardware-based machine GUID from registry
+    #[cfg(target_os = "windows")]
+    fn update_main_js_file_windows(&self) -> Result<()> {
+        // Get LOCALAPPDATA path
+        let local_appdata = std::env::var("LOCALAPPDATA")
+            .context("Failed to get LOCALAPPDATA environment variable")?;
+
+        let main_js_path = PathBuf::from(local_appdata)
+            .join("Programs")
+            .join("cursor")
+            .join("resources")
+            .join("app")
+            .join("out")
+            .join("main.js");
+
+        if !main_js_path.exists() {
+            anyhow::bail!("main.js not found at: {:?}", main_js_path);
+        }
+
+        // Backup main.js
+        let timestamp = Local::now().format("%Y%m%d_%H%M%S");
+        let backup_name = format!("main.js.backup_{}", timestamp);
+        let backup_path = main_js_path.with_file_name(backup_name);
+        fs::copy(&main_js_path, &backup_path).context("Failed to backup main.js")?;
+
+        // Read main.js content
+        let content = fs::read_to_string(&main_js_path)?;
+
+        // Replace registry query command with PowerShell command
+        // Original: ${v5[s$()]}\\REG.exe QUERY HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography /v MachineGuid
+        // Replacement: powershell -Command "[guid]::NewGuid().ToString().ToLower()"
+        let old_pattern = r#"${v5[s$()]}\\REG.exe QUERY HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography /v MachineGuid"#;
+        let new_pattern = r#"powershell -Command "[guid]::NewGuid().ToString().ToLower()""#;
+
+        let updated_content = content.replace(old_pattern, new_pattern);
+
+        // Write back to file
+        fs::write(&main_js_path, updated_content)?;
+
+        // Verify the replacement was successful
+        let verify_content = fs::read_to_string(&main_js_path)?;
+        if verify_content
+            .contains(r#"powershell -Command "[guid]::NewGuid().ToString().ToLower()""#)
+        {
+            println!("main.js file modified successfully");
+        } else {
+            eprintln!("Warning: main.js file may not have been correctly modified");
+            eprintln!("You can restore from backup: {:?}", backup_path);
+        }
 
         Ok(())
     }
