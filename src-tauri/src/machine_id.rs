@@ -6,10 +6,12 @@ pub struct MachineIdGenerator;
 impl MachineIdGenerator {
     pub fn generate() -> MachineIds {
         // Generate 64-character hex IDs (two UUIDs concatenated without dashes)
+        // This matches the working implementation: uuid.uuid4().hex + uuid.uuid4().hex
         let machine_id = format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple());
         let mac_machine_id = format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple());
-        // devDeviceId uses standard UUID format
+        // devDeviceId uses standard UUID format (lowercase)
         let dev_device_id = Uuid::new_v4().to_string();
+        // sqmId uses standard UUID format in uppercase with braces
         let sqm_id = format!("{{{}}}", Uuid::new_v4().to_string().to_uppercase());
 
         MachineIds {

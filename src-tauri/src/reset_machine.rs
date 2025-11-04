@@ -120,6 +120,7 @@ impl MachineIdResetter {
         let content = fs::read_to_string(&main_js_path)?;
 
         // Replace ioreg command with uuidgen command
+        // This matches the working implementation exactly
         // Original: ioreg -rd1 -c IOPlatformExpertDevice
         // Replacement: UUID=$(uuidgen | tr '[:upper:]' '[:lower:]');echo \"IOPlatformUUID = \"$UUID\";
         let old_pattern = "ioreg -rd1 -c IOPlatformExpertDevice";
@@ -131,9 +132,9 @@ impl MachineIdResetter {
         // Write back to file
         fs::write(&main_js_path, updated_content)?;
 
-        // Verify the replacement was successful
+        // Verify the replacement was successful by checking if the new pattern is in the content
         let verify_content = fs::read_to_string(&main_js_path)?;
-        if verify_content.contains(r#"darwin:"UUID=$(uuidgen"#) {
+        if verify_content.contains(new_pattern) {
             println!("main.js file modified successfully");
         } else {
             eprintln!("Warning: main.js file may not have been correctly modified");
@@ -173,22 +174,36 @@ impl MachineIdResetter {
         let content = fs::read_to_string(&main_js_path)?;
 
         // Replace registry query command with PowerShell command
-        // Original: ${v5[s$()]}\\REG.exe QUERY HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography /v MachineGuid
-        // Replacement: powershell -Command "[guid]::NewGuid().ToString().ToLower()"
-        let old_pattern = r#"${v5[s$()]}\\REG.exe QUERY HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography /v MachineGuid"#;
+        // This matches the working implementation exactly
+        // Note: The variable name (e.g., v5[s$()], u5[bM()]) may vary between Cursor versions
+        // We'll try multiple patterns to handle different versions
+        let patterns_to_try = vec![
+            r#"${v5[s$()]}\\REG.exe QUERY HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography /v MachineGuid"#,
+            r#"${u5[bM()]}\\REG.exe QUERY HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography /v MachineGuid"#,
+        ];
         let new_pattern = r#"powershell -Command "[guid]::NewGuid().ToString().ToLower()""#;
 
-        let updated_content = content.replace(old_pattern, new_pattern);
+        let mut updated_content = content.clone();
+        let mut replaced = false;
+        for old_pattern in patterns_to_try {
+            if updated_content.contains(old_pattern) {
+                updated_content = updated_content.replace(old_pattern, new_pattern);
+                replaced = true;
+                break;
+            }
+        }
 
         // Write back to file
         fs::write(&main_js_path, updated_content)?;
 
-        // Verify the replacement was successful
+        // Verify the replacement was successful by checking if the new pattern is in the content
         let verify_content = fs::read_to_string(&main_js_path)?;
-        if verify_content
-            .contains(r#"powershell -Command "[guid]::NewGuid().ToString().ToLower()""#)
-        {
+        if verify_content.contains(new_pattern) {
             println!("main.js file modified successfully");
+        } else if !replaced {
+            eprintln!("Warning: Original REG.exe pattern not found in main.js");
+            eprintln!("This might indicate a new Cursor version with a different pattern");
+            eprintln!("You can restore from backup: {:?}", backup_path);
         } else {
             eprintln!("Warning: main.js file may not have been correctly modified");
             eprintln!("You can restore from backup: {:?}", backup_path);
