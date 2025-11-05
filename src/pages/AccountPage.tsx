@@ -143,8 +143,8 @@ function AccountPage({
       setImportText('');
       alert(`Successfully imported ${parsed.length} account(s)!`);
 
-      // Auto-update all accounts in the background (silently)
-      handleBatchUpdate(true);
+      // Refresh the list to show new accounts without fetching API data
+      onRefresh();
     } catch (err) {
       alert('Failed to import accounts: ' + err);
     }
@@ -215,16 +215,36 @@ function AccountPage({
         <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Import Accounts</h3>
           <p className="text-sm text-gray-600 mb-2">
-            Format:{' '}
-            <code className="bg-gray-100 px-2 py-1 rounded">email,accessToken,sessionToken</code>
+            <span className="font-medium">Auto-Detection Enabled!</span> Paste your account info in
+            any format.
           </p>
+          <p className="text-xs text-gray-500 mb-2">Supported formats:</p>
+          <ul className="text-xs text-gray-500 mb-3 ml-4 space-y-1">
+            <li>
+              • CSV:{' '}
+              <code className="bg-gray-100 px-1 rounded">email,accessToken,sessionToken</code>
+            </li>
+            <li>
+              • Chinese brackets:{' '}
+              <code className="bg-gray-100 px-1 rounded">【email：...】【accessToken：...】</code>
+            </li>
+            <li>
+              • Plain text:{' '}
+              <code className="bg-gray-100 px-1 rounded">email@domain.com eyJhbGc...</code>
+            </li>
+            <li>
+              • Labeled: <code className="bg-gray-100 px-1 rounded">email: xxx, token: xxx</code>
+            </li>
+            <li>• JSON and more!</li>
+          </ul>
           <p className="text-xs text-gray-500 mb-4">
-            Enter one account per line. SessionToken is optional.
+            Enter one account per line. SessionToken is optional and will be auto-detected if
+            present.
           </p>
           <textarea
             value={importText}
             onChange={(e) => setImportText(e.target.value)}
-            placeholder="user@example.com,eyJhbGc...,WorkosCursorSessionToken=...&#10;user2@example.com,eyJhbGc..."
+            placeholder="Paste your account info here in any format...&#10;Example: user@example.com,eyJhbGc...&#10;Or: 【email：user@example.com】【accessToken：eyJhbGc...】"
             className="w-full h-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
           />
           <div className="flex gap-2 mt-4">

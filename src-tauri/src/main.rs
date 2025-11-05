@@ -166,11 +166,10 @@ fn batch_add_accounts(state: State<AppState>, accounts: Vec<Account>) -> Result<
     let csv_path = state.csv_path.lock().unwrap();
     let csv_manager = CsvManager::new(csv_path.clone());
 
-    for account in accounts {
-        csv_manager
-            .add_account(account)
-            .map_err(|e| e.to_string())?;
-    }
+    // Use the optimized batch add method instead of adding one by one
+    csv_manager
+        .batch_add_accounts(accounts)
+        .map_err(|e| e.to_string())?;
 
     Ok(())
 }

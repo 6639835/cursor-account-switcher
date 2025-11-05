@@ -15,7 +15,10 @@ A high-performance, cross-platform desktop application for managing and switchin
 
 ### 📋 Account Management
 - **Account List**: View all accounts with status indicators
-- **Batch Import**: Import multiple accounts from formatted text
+- **Batch Import**: Import multiple accounts with intelligent auto-detection
+  - ✨ **Auto-detects** email and tokens from various formats
+  - Supports CSV, JSON, Chinese brackets (【】), labeled text, and more
+  - See [IMPORT_EXAMPLES.md](IMPORT_EXAMPLES.md) for supported formats
 - **Online Update**: Update all account information from Cursor API
 - **Smart Switching**: Switch accounts with automatic machine ID reset
 - **Delete Accounts**: Remove unwanted accounts

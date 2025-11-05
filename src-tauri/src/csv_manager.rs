@@ -1,6 +1,7 @@
 use crate::types::Account;
 use anyhow::Result;
 use csv::{Reader, Writer};
+use regex::Regex;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 
@@ -156,6 +157,25 @@ impl CsvManager {
         Ok(())
     }
 
+    pub fn batch_add_accounts(&self, new_accounts: Vec<Account>) -> Result<()> {
+        let mut accounts = self.read_accounts()?;
+
+        // Find the max index once
+        let mut max_index = accounts.iter().map(|a| a.index).max().unwrap_or(0);
+
+        // Add all accounts with auto-incremented indices
+        for account in new_accounts {
+            max_index += 1;
+            let mut new_account = account;
+            new_account.index = max_index;
+            accounts.push(new_account);
+        }
+
+        // Write all accounts once
+        self.write_accounts(&accounts)?;
+        Ok(())
+    }
+
     pub fn delete_account(&self, email: &str) -> Result<bool> {
         let mut accounts = self.read_accounts()?;
         let original_len = accounts.len();
@@ -207,16 +227,74 @@ impl CsvManager {
     fn parse_account_line(&self, line: &str) -> Result<Account> {
         use chrono::Local;
 
-        // Parse format: email,accessToken,sessionToken
+        // Try auto-detection first
+        if let Ok(account) = self.auto_detect_account(line) {
+            return Ok(account);
+        }
+
+        // Fall back to legacy CSV format: email,accessToken,sessionToken
         let parts: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
 
         if parts.len() < 2 {
-            anyhow::bail!("Invalid format. Expected: email,accessToken,sessionToken");
+            anyhow::bail!(
+                "Could not parse account information. Please provide either:\n\
+                 - Auto-detected format (email and JWT token in any format)\n\
+                 - CSV format: email,accessToken,sessionToken"
+            );
         }
 
         let email = parts[0].to_string();
         let access_token = parts[1].to_string();
         let session_token = parts.get(2).unwrap_or(&"").to_string();
+
+        Ok(Account {
+            index: 0, // Will be auto-assigned
+            email,
+            access_token: access_token.clone(),
+            refresh_token: access_token, // Same as access token usually
+            cookie: session_token,
+            days_remaining: "0".to_string(),
+            status: "unknown".to_string(),
+            record_time: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            source: "imported".to_string(),
+            usage_used: None,
+            usage_remaining: None,
+            usage_total: None,
+            usage_percentage: None,
+        })
+    }
+
+    fn auto_detect_account(&self, line: &str) -> Result<Account> {
+        use chrono::Local;
+
+        // Extract email using regex
+        let email_re = Regex::new(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}").unwrap();
+        let email = email_re
+            .find(line)
+            .map(|m| m.as_str().to_string())
+            .ok_or_else(|| anyhow::anyhow!("No email address found"))?;
+
+        // Extract JWT tokens (format: eyJ...xxx.xxx.xxx)
+        // JWT tokens always start with eyJ and have exactly 3 parts separated by dots
+        let jwt_re = Regex::new(r"eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+").unwrap();
+        let jwt_tokens: Vec<&str> = jwt_re.find_iter(line).map(|m| m.as_str()).collect();
+
+        if jwt_tokens.is_empty() {
+            anyhow::bail!("No JWT access token found");
+        }
+
+        // The access token is typically the first JWT token found
+        let access_token = jwt_tokens[0].to_string();
+
+        // Extract session token
+        // Session token format: user_xxx::eyJ... or user_xxx%3A%3AeyJ...
+        // It typically contains the user ID and the JWT token separated by :: or %3A%3A
+        let session_token_re =
+            Regex::new(r"(?:user_|auth0\|user_)[a-zA-Z0-9_-]+(?:%3A%3A|::)eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+").unwrap();
+        let session_token = session_token_re
+            .find(line)
+            .map(|m| m.as_str().to_string())
+            .unwrap_or_default();
 
         Ok(Account {
             index: 0, // Will be auto-assigned
@@ -467,5 +545,99 @@ mod tests {
         let result = manager.parse_account_line(line);
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_auto_detect_chinese_bracket_format() {
+        let (manager, _temp_dir) = create_test_manager();
+
+        let line = "【email：lh6jikikhp@68888.asia】【accessToken：eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhdXRoMHx1c2VyXzAxSzdEMlhXWFpYS001SzdOSDJRQTBETUJWIiwidGltZSI6IjE3NjAzMDIxNzciLCJyYW5kb21uZXNzIjoiNGRjODZiYTItOTM5Ny00MDVmIiwiZXhwIjoxNzY1NDg2MTc3LCJpc3MiOiJodHRwczovL2F1dGhlbnRpY2F0aW9uLmN1cnNvci5zaCIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwgb2ZmbGluZV9hY2Nlc3MiLCJhdWQiOiJodHRwczovL2N1cnNvci5jb20iLCJ0eXBlIjoic2Vzc2lvbiJ9.uXmZ57avnDX1ZMypnlocSx3bLz-uIIIdl73Pewkgr0E】 【sessionToken：user_01K7D2XWXZXKM5K7NH2QA0DMBV%3A%3AeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhdXRoMHx1c2VyXzAxSzdEMlhXWFpYS001SzdOSDJRQTBETUJWIiwidGltZSI6IjE3NjAzMDIxNzciLCJyYW5kb21uZXNzIjoiNGRjODZiYTItOTM5Ny00MDVmIiwiZXhwIjoxNzY1NDg2MTc3LCJpc3MiOiJodHRwczovL2F1dGhlbnRpY2F0aW9uLmN1cnNvci5zaCIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwgb2ZmbGluZV9hY2Nlc3MiLCJhdWQiOiJodHRwczovL2N1cnNvci5jb20iLCJ0eXBlIjoic2Vzc2lvbiJ9.uXmZ57avnDX1ZMypnlocSx3bLz-uIIIdl73Pewkgr0E】";
+
+        let account = manager.parse_account_line(line).unwrap();
+
+        assert_eq!(account.email, "lh6jikikhp@68888.asia");
+        assert_eq!(account.access_token, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhdXRoMHx1c2VyXzAxSzdEMlhXWFpYS001SzdOSDJRQTBETUJWIiwidGltZSI6IjE3NjAzMDIxNzciLCJyYW5kb21uZXNzIjoiNGRjODZiYTItOTM5Ny00MDVmIiwiZXhwIjoxNzY1NDg2MTc3LCJpc3MiOiJodHRwczovL2F1dGhlbnRpY2F0aW9uLmN1cnNvci5zaCIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwgb2ZmbGluZV9hY2Nlc3MiLCJhdWQiOiJodHRwczovL2N1cnNvci5jb20iLCJ0eXBlIjoic2Vzc2lvbiJ9.uXmZ57avnDX1ZMypnlocSx3bLz-uIIIdl73Pewkgr0E");
+        assert_eq!(account.cookie, "user_01K7D2XWXZXKM5K7NH2QA0DMBV%3A%3AeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhdXRoMHx1c2VyXzAxSzdEMlhXWFpYS001SzdOSDJRQTBETUJWIiwidGltZSI6IjE3NjAzMDIxNzciLCJyYW5kb21uZXNzIjoiNGRjODZiYTItOTM5Ny00MDVmIiwiZXhwIjoxNzY1NDg2MTc3LCJpc3MiOiJodHRwczovL2F1dGhlbnRpY2F0aW9uLmN1cnNvci5zaCIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwgb2ZmbGluZV9hY2Nlc3MiLCJhdWQiOiJodHRwczovL2N1cnNvci5jb20iLCJ0eXBlIjoic2Vzc2lvbiJ9.uXmZ57avnDX1ZMypnlocSx3bLz-uIIIdl73Pewkgr0E");
+    }
+
+    #[test]
+    fn test_auto_detect_plain_text_format() {
+        let (manager, _temp_dir) = create_test_manager();
+
+        let line = "test@example.com eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+
+        let account = manager.parse_account_line(line).unwrap();
+
+        assert_eq!(account.email, "test@example.com");
+        assert_eq!(account.access_token, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
+    }
+
+    #[test]
+    fn test_auto_detect_with_labels() {
+        let (manager, _temp_dir) = create_test_manager();
+
+        let line = "email: user@domain.com, accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+
+        let account = manager.parse_account_line(line).unwrap();
+
+        assert_eq!(account.email, "user@domain.com");
+        assert_eq!(account.access_token, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
+    }
+
+    #[test]
+    fn test_auto_detect_json_format() {
+        let (manager, _temp_dir) = create_test_manager();
+
+        let line = r#"{"email":"test@example.com","token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"}"#;
+
+        let account = manager.parse_account_line(line).unwrap();
+
+        assert_eq!(account.email, "test@example.com");
+        assert_eq!(account.access_token, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
+    }
+
+    #[test]
+    fn test_auto_detect_multiline_format() {
+        let (manager, _temp_dir) = create_test_manager();
+
+        let line = "Email: test@example.com\nToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+
+        let account = manager.parse_account_line(line).unwrap();
+
+        assert_eq!(account.email, "test@example.com");
+        assert_eq!(account.access_token, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
+    }
+
+    #[test]
+    fn test_auto_detect_no_email() {
+        let (manager, _temp_dir) = create_test_manager();
+
+        let line = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+
+        let result = manager.parse_account_line(line);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_auto_detect_no_token() {
+        let (manager, _temp_dir) = create_test_manager();
+
+        let line = "test@example.com";
+
+        let result = manager.parse_account_line(line);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_auto_detect_with_session_token() {
+        let (manager, _temp_dir) = create_test_manager();
+
+        let line = "test@example.com eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c user_ABC123::eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+
+        let account = manager.parse_account_line(line).unwrap();
+
+        assert_eq!(account.email, "test@example.com");
+        assert_eq!(account.access_token, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
+        assert!(account.cookie.contains("user_ABC123"));
     }
 }
