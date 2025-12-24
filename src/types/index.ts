@@ -34,3 +34,55 @@ export interface MachineIds {
   dev_device_id: string;
   sqm_id: string;
 }
+
+export interface TokenInfo {
+  token_type: 'jwt' | 'session';
+  user_id?: string;
+  is_valid: boolean;
+}
+
+export interface UsageEvent {
+  id: string;
+  timestamp: string;
+  model?: string;
+  type?: string;
+  usage_type?: string;
+  cost?: number;
+  tokens?: number;
+  request_type?: string;
+}
+
+export interface BillingCycle {
+  start_date?: string;
+  end_date?: string;
+  usage?: number;
+  limit?: number;
+}
+
+export interface DetailedUserInfo {
+  email?: string;
+  user_id?: string;
+  membership_type?: string;
+  subscription_status?: string;
+}
+
+export interface Invoice {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  created: string;
+  period_start?: string;
+  period_end?: string;
+  number?: string;
+}
+
+export interface UsageEventsResponse {
+  events: UsageEvent[];
+  total?: number;
+}
+
+export interface InvoicesResponse {
+  invoices: Invoice[];
+  total?: number;
+}

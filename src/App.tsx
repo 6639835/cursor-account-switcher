@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-import { Home, Users, Settings, FileText } from 'lucide-react';
+import { Home, Users, Settings, FileText, BarChart3 } from 'lucide-react';
 import HomePage from './pages/HomePage';
 import AccountPage from './pages/AccountPage';
 import SettingsPage from './pages/SettingsPage';
 import LogPage from './pages/LogPage';
+import DetailedUsagePage from './pages/DetailedUsagePage';
 import { APP_VERSION } from './version';
 import { AccountInfo, UsageInfo, Account } from './types';
 
-type TabType = 'home' | 'accounts' | 'settings' | 'logs';
+type TabType = 'home' | 'accounts' | 'detailed-usage' | 'logs' | 'settings';
 
 // Cache duration constant (5 minutes)
 const CACHE_DURATION = 5 * 60 * 1000;
@@ -186,6 +187,7 @@ function App() {
   const tabs = [
     { id: 'home' as TabType, name: 'Home', icon: Home },
     { id: 'accounts' as TabType, name: 'Accounts', icon: Users },
+    { id: 'detailed-usage' as TabType, name: 'Detailed Usage', icon: BarChart3 },
     { id: 'logs' as TabType, name: 'Logs', icon: FileText },
     { id: 'settings' as TabType, name: 'Settings', icon: Settings },
   ];
@@ -247,6 +249,9 @@ function App() {
             onRefreshTimeUpdate={setAccountsLastRefreshTime}
             onRefreshHome={() => loadAccountInfo(true)}
           />
+        )}
+        {currentTab === 'detailed-usage' && (
+          <DetailedUsagePage onRefresh={() => loadAccountInfo(true)} />
         )}
         {currentTab === 'settings' && <SettingsPage />}
         {currentTab === 'logs' && <LogPage />}

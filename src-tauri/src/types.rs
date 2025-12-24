@@ -49,3 +49,33 @@ pub struct MachineIds {
     pub dev_device_id: String,
     pub sqm_id: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TokenInfo {
+    pub token_type: String, // "jwt" or "session"
+    pub user_id: Option<String>,
+    pub is_valid: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TokenResponse {
+    pub access_token: String,
+    pub refresh_token: String,
+    pub work_session_token: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BillingCycle {
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub usage: Option<f64>,
+    pub limit: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DetailedUserInfo {
+    pub email: Option<String>,
+    pub user_id: Option<String>,
+    pub membership_type: Option<String>,
+    pub subscription_status: Option<String>,
+}

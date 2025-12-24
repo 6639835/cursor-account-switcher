@@ -4,16 +4,19 @@
 mod api_client;
 mod csv_manager;
 mod database;
+mod detailed_usage_client;
 mod logger;
 mod machine_id;
 mod path_detector;
 mod process_utils;
 mod reset_machine;
+mod token_auth;
 mod types;
 
 use api_client::CursorApiClient;
 use csv_manager::CsvManager;
 use database::Database;
+use detailed_usage_client::DetailedUsageClient;
 use logger::{LogEntry, Logger};
 use path_detector::PathDetector;
 use process_utils::ProcessManager;
@@ -440,6 +443,116 @@ fn refresh_from_tray(state: State<AppState>) -> Result<String, String> {
     Ok(format!("Refreshed {} accounts", accounts.len()))
 }
 
+#[tauri::command]
+fn validate_token(token: String) -> Result<TokenInfo, String> {
+    tracing::info!("Validating token");
+    token_auth::validate_token_info(&token).map_err(|e| {
+        tracing::error!("Token validation failed: {}", e);
+        e.to_string()
+    })
+}
+
+#[tauri::command]
+fn import_from_token(state: State<AppState>, token: String) -> Result<Account, String> {
+    tracing::info!("Importing account from token");
+    let csv_path = state.csv_path.lock().unwrap();
+    let csv_manager = CsvManager::new(csv_path.clone());
+
+    let client = token_auth::TokenAuthClient::new();
+    let mut account = client.convert_token_to_account(&token).map_err(|e| {
+        tracing::error!("Token conversion failed: {}", e);
+        e.to_string()
+    })?;
+
+    // Set metadata
+    account.source = "token_import".to_string();
+    account.record_time = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    // Add to CSV
+    csv_manager.add_account(account.clone()).map_err(|e| {
+        tracing::error!("Failed to add account to CSV: {}", e);
+        e.to_string()
+    })?;
+
+    tracing::info!(
+        "Successfully imported account from token: {}",
+        account.email
+    );
+    Ok(account)
+}
+
+#[tauri::command]
+fn get_usage_events(state: State<AppState>) -> Result<serde_json::Value, String> {
+    tracing::info!("Fetching usage events");
+
+    let cursor_path = state.cursor_base_path.lock().unwrap();
+    let base_path = cursor_path.as_ref().ok_or("Cursor path not set")?;
+
+    let db_path = PathDetector::get_db_path(base_path);
+    let db = Database::new(db_path);
+    let session_token = db.get_session_token().map_err(|e| e.to_string())?;
+
+    let client = DetailedUsageClient::new();
+    client.get_usage_events(&session_token).map_err(|e| {
+        tracing::error!("Failed to get usage events: {}", e);
+        e.to_string()
+    })
+}
+
+#[tauri::command]
+fn get_detailed_user_info(state: State<AppState>) -> Result<DetailedUserInfo, String> {
+    tracing::info!("Fetching detailed user info");
+
+    let cursor_path = state.cursor_base_path.lock().unwrap();
+    let base_path = cursor_path.as_ref().ok_or("Cursor path not set")?;
+
+    let db_path = PathDetector::get_db_path(base_path);
+    let db = Database::new(db_path);
+    let session_token = db.get_session_token().map_err(|e| e.to_string())?;
+
+    let client = DetailedUsageClient::new();
+    client.get_detailed_user_info(&session_token).map_err(|e| {
+        tracing::error!("Failed to get detailed user info: {}", e);
+        e.to_string()
+    })
+}
+
+#[tauri::command]
+fn get_invoices(state: State<AppState>) -> Result<serde_json::Value, String> {
+    tracing::info!("Fetching invoices");
+
+    let cursor_path = state.cursor_base_path.lock().unwrap();
+    let base_path = cursor_path.as_ref().ok_or("Cursor path not set")?;
+
+    let db_path = PathDetector::get_db_path(base_path);
+    let db = Database::new(db_path);
+    let session_token = db.get_session_token().map_err(|e| e.to_string())?;
+
+    let client = DetailedUsageClient::new();
+    client.list_invoices(&session_token).map_err(|e| {
+        tracing::error!("Failed to get invoices: {}", e);
+        e.to_string()
+    })
+}
+
+#[tauri::command]
+fn get_billing_cycle(state: State<AppState>) -> Result<BillingCycle, String> {
+    tracing::info!("Fetching billing cycle");
+
+    let cursor_path = state.cursor_base_path.lock().unwrap();
+    let base_path = cursor_path.as_ref().ok_or("Cursor path not set")?;
+
+    let db_path = PathDetector::get_db_path(base_path);
+    let db = Database::new(db_path);
+    let session_token = db.get_session_token().map_err(|e| e.to_string())?;
+
+    let client = DetailedUsageClient::new();
+    client.get_billing_cycle(&session_token).map_err(|e| {
+        tracing::error!("Failed to get billing cycle: {}", e);
+        e.to_string()
+    })
+}
+
 fn build_system_tray() -> SystemTray {
     let show = CustomMenuItem::new("show".to_string(), "Show Window");
     let hide = CustomMenuItem::new("hide".to_string(), "Hide Window");
@@ -731,6 +844,12 @@ fn main() {
             get_log_file_path,
             sync_from_tray,
             refresh_from_tray,
+            validate_token,
+            import_from_token,
+            get_usage_events,
+            get_detailed_user_info,
+            get_invoices,
+            get_billing_cycle,
         ])
         .on_window_event(|event| {
             if let WindowEvent::CloseRequested { api, .. } = event.event() {

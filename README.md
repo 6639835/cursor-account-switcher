@@ -18,7 +18,7 @@ A high-performance, cross-platform desktop application for managing and switchin
 - **Batch Import**: Import multiple accounts with intelligent auto-detection
   - ✨ **Auto-detects** email and tokens from various formats
   - Supports CSV, JSON, Chinese brackets (【】), labeled text, and more
-  - See [IMPORT_EXAMPLES.md](IMPORT_EXAMPLES.md) for supported formats
+  - Automatically extracts email, accessToken, and optional sessionToken
 - **Online Update**: Update all account information from Cursor API
 - **Smart Switching**: Switch accounts with automatic machine ID reset
 - **Delete Accounts**: Remove unwanted accounts
@@ -32,14 +32,21 @@ A high-performance, cross-platform desktop application for managing and switchin
 - **Activity Tracking**: View all application operations
 - **Export Logs**: Save logs for debugging
 
-### 💾 Data Storage
+### 💾 Data Storage & Logs
 - **Persistent Storage**: Account data stored in user directory
 - **Survives Updates**: Data persists across app updates
 - **Cross-platform**: Follows OS best practices
+- **Activity Logs**: All operations logged for debugging
 - **Storage Locations**:
   - **macOS**: `~/Library/Application Support/com.cursor.switcher/`
+    - `cursor_auth_total.csv` - Account data
+    - `app.log` - Application logs
   - **Windows**: `C:\Users\<USERNAME>\AppData\Roaming\com.cursor.switcher\`
+    - `cursor_auth_total.csv` - Account data
+    - `app.log` - Application logs
   - **Linux**: `~/.config/com.cursor.switcher/`
+    - `cursor_auth_total.csv` - Account data
+    - `app.log` - Application logs
 
 ## 🚀 Why Tauri?
 
@@ -63,13 +70,13 @@ Compared to the original Python version:
 3. **System Dependencies**:
    - **Windows**: Visual Studio C++ Build Tools
    - **macOS**: Xcode Command Line Tools
-   - **Linux**: `libwebkit2gtk-4.0-dev`, `build-essential`, `curl`, `wget`, `libssl-dev`, `libgtk-3-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`
+   - **Linux**: `libwebkit2gtk-4.1-dev`, `libjavascriptcoregtk-4.1-dev`, `libappindicator3-dev`, `librsvg2-dev`, `patchelf`, `libsoup-3.0-dev`, `build-essential`, `curl`, `wget`, `libssl-dev`, `libgtk-3-dev`
 
 ### Quick Start
 
 ```bash
 # 1. Clone or navigate to the project
-cd cursor-switcher-tauri
+cd cursor-account-switcher
 
 # 2. Install dependencies
 npm install
@@ -86,7 +93,7 @@ npm run tauri build
 ### Project Structure
 
 ```
-cursor-switcher-tauri/
+cursor-account-switcher/
 ├── src/                    # React frontend
 │   ├── pages/             # Page components
 │   │   ├── HomePage.tsx
@@ -94,9 +101,13 @@ cursor-switcher-tauri/
 │   │   ├── SettingsPage.tsx
 │   │   └── LogPage.tsx
 │   ├── types/             # TypeScript types
+│   ├── utils/             # Utility functions
+│   ├── test/              # Test utilities
+│   ├── __tests__/         # Component tests
 │   ├── App.tsx            # Main app component
-│   ├── main.tsx          # Entry point
-│   └── styles.css        # Tailwind styles
+│   ├── main.tsx           # Entry point
+│   ├── version.ts         # Version management
+│   └── styles.css         # Tailwind styles
 ├── src-tauri/             # Rust backend
 │   ├── src/
 │   │   ├── main.rs           # Tauri commands
@@ -107,10 +118,16 @@ cursor-switcher-tauri/
 │   │   ├── process_utils.rs  # Process management
 │   │   ├── path_detector.rs  # Path detection
 │   │   ├── reset_machine.rs  # Machine ID reset
+│   │   ├── logger.rs         # Logging system
 │   │   └── types.rs          # Rust types
-│   ├── Cargo.toml        # Rust dependencies
-│   └── tauri.conf.json   # Tauri configuration
-├── package.json          # Node dependencies
+│   ├── tests/             # Backend tests
+│   ├── Cargo.toml         # Rust dependencies
+│   └── tauri.conf.json    # Tauri configuration
+├── scripts/               # Build & utility scripts
+├── .github/workflows/     # CI/CD workflows
+├── package.json           # Node dependencies
+├── vitest.config.ts       # Vitest configuration
+├── CONTRIBUTING.md        # Contribution guidelines
 └── README.md
 ```
 
@@ -118,24 +135,35 @@ cursor-switcher-tauri/
 
 ```bash
 # Development
-npm run dev              # Run Vite dev server
-npm run tauri dev        # Run Tauri app in dev mode
+npm run dev                    # Run Vite dev server
+npm run tauri dev              # Run Tauri app in dev mode
 
 # Build
-npm run build            # Build frontend
-npm run tauri build      # Build complete app
-
-# Preview
-npm run preview          # Preview production build
+npm run build                  # Build frontend
+npm run tauri build            # Build complete app
+npm run preview                # Preview production build
 
 # Testing
-npm test                 # Run all tests (frontend + backend)
-npm run test:frontend    # Run frontend tests
-npm run test:backend     # Run backend tests
+npm test                       # Run all tests (frontend + backend)
+npm run test:frontend          # Run frontend tests
+npm run test:frontend:watch    # Run frontend tests in watch mode
+npm run test:frontend:ui       # Run frontend tests with UI
+npm run test:frontend:coverage # Run tests with coverage
+npm run test:backend           # Run backend tests
+npm run test:backend:verbose   # Run backend tests with verbose output
 
 # Linting & Formatting
-npm run lint             # Lint all code
-npm run format           # Format all code
+npm run lint                   # Lint all code (TypeScript + Rust)
+npm run lint:ts                # Lint TypeScript only
+npm run lint:rust              # Lint Rust only
+npm run format                 # Format all code
+npm run format:ts              # Format TypeScript only
+npm run format:rust            # Format Rust only
+npm run format:check           # Check formatting without modifying
+
+# Version Management
+npm run sync-version           # Sync version across package.json and tauri.conf.json
+npm run release                # Create a new release
 ```
 
 ## 🧪 Testing
@@ -159,15 +187,21 @@ npm run test:frontend:watch
 
 # Run tests with coverage
 npm run test:frontend:coverage
+
+# Run backend tests with verbose output
+npm run test:backend:verbose
 ```
 
 ### Test Coverage
 
-- ✅ **Frontend**: Component tests, integration tests, type tests
-- ✅ **Backend**: Unit tests for all modules, integration tests
-- ✅ **E2E**: Cross-module workflow tests
-
-For detailed testing documentation, see [TESTING.md](TESTING.md).
+- ✅ **Frontend**: Component tests using Vitest and React Testing Library
+  - Page components (HomePage, AccountPage, SettingsPage)
+  - Type definitions
+  - Utilities and helpers
+- ✅ **Backend**: Unit tests and integration tests using Rust's built-in test framework
+  - All Rust modules tested
+  - Cross-module integration tests
+- ✅ **CI/CD**: Automated testing on all platforms via GitHub Actions
 
 ## 📋 Usage
 
@@ -227,58 +261,69 @@ npm run tauri build
 
 Output: `src-tauri/target/release/bundle/deb/` or `appimage/`
 
-## 🤖 Automated Releases (GitHub Actions)
+## 🤖 Automated Workflows (GitHub Actions)
 
-This project includes automated workflows for building and releasing across all platforms.
+This project includes automated workflows for building, testing, and releasing across all platforms.
 
 ### Release Workflow
 
-The release workflow automatically builds for Windows, macOS (Intel & Apple Silicon), and Linux.
+The release workflow automatically builds for Windows, macOS, and Linux.
 
 **Trigger a release:**
 
 1. **Via Git Tag** (Recommended):
    ```bash
-   # Update version in package.json and tauri.conf.json
-   npm version 1.0.1
+   # Update version across all files
+   npm run sync-version
    
-   # Push tag to trigger release
-   git push origin v1.0.1
+   # Create and push version tag
+   git tag v2.0.0
+   git push origin v2.0.0
    ```
 
 2. **Via Manual Dispatch**:
    - Go to Actions tab on GitHub
    - Select "Release" workflow
    - Click "Run workflow"
-   - Enter version (e.g., `v1.0.1`)
+   - Enter version (e.g., `2.0.0`)
 
 **What happens:**
-- Builds for all platforms in parallel
-- Creates installers (`.msi`, `.dmg`, `.deb`, `.AppImage`)
-- Creates a draft release on GitHub
-- Uploads all artifacts to the release
-- Publishes the release when all builds complete
+- Builds for all platforms in parallel (Linux, macOS, Windows)
+- Creates installers (`.msi`, `.exe`, `.dmg`, `.deb`, `.AppImage`)
+- Creates a GitHub release with all artifacts
+- Automatically generates release notes
 
 ### CI Workflow
 
-Runs on every push and pull request to ensure code quality:
+Runs on every push and pull request to `main` and `develop` branches:
 
 - TypeScript linting and formatting checks
 - Rust linting and formatting checks
 - Frontend build validation
-- Full Tauri build on all platforms
+- Full Tauri build on all platforms (Ubuntu, macOS, Windows)
+
+### Test Workflow
+
+Automated testing on push and pull requests:
+
+- **Frontend Tests**: Run Vitest tests with coverage reporting
+- **Backend Tests**: Run Cargo tests on all platforms
+- **Linting**: Check code formatting and style
+- **Coverage**: Upload coverage reports to Codecov
 
 ### Workflow Files
 
 - `.github/workflows/release.yml` - Automated release builds
 - `.github/workflows/ci.yml` - Continuous integration checks
+- `.github/workflows/test.yml` - Automated testing and coverage
 
 ## 🔐 Security
 
-- **Local Data**: All account data stored in local CSV file
-- **No Telemetry**: No data sent to external servers
-- **Sandboxed**: Tauri's security model restricts file system access
+- **Local Data**: All account data stored locally in CSV files and SQLite database
+- **No Telemetry**: No data sent to external servers (except Cursor API for account updates)
+- **Sandboxed**: Tauri's security model with restricted file system access
 - **Open Source**: Fully auditable code
+- **Logging**: Activity logs stored locally for debugging purposes
 
 ## 🐛 Troubleshooting
 
@@ -347,20 +392,43 @@ npm install
 npm run tauri build
 ```
 
-## 📄 CSV File Format
+## 💾 Data Storage
+
+This application uses two storage mechanisms:
+
+### 1. Account Data (CSV)
+
+Stored at `{app_data_dir}/cursor_auth_total.csv`:
 
 ```csv
 Index,Email,Access Token,Refresh Token,Cookie,Days Remaining,Status,Record Time
 1,test@example.com,eyJhbGci...,eyJhbGci...,user_xxx%3A%3A...,28.5,pro,2025-10-22 15:30:00
 ```
 
+### 2. Cursor Database (SQLite)
+
+Cursor's own storage at `{cursor_path}/state.vscdb`:
+- Stores authentication tokens
+- Session information
+- User preferences
+
+The application reads from and writes to both storage locations to manage accounts.
+
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on:
+
+- Development setup
+- Code standards
+- Testing requirements
+- Pull request process
+- Commit message conventions
+
+Feel free to submit a Pull Request or open an Issue!
 
 ## 📝 License
 
-This project is licensed under the GPL-3.0 License - see the [LICENSE](../LICENSE) file for details.
+This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
 
 ## ⚠️ Disclaimer
 
@@ -369,13 +437,20 @@ This tool is for learning and research purposes only. Do not use it for purposes
 ## 🙏 Acknowledgments
 
 - Original Python version: Cursor Account Switcher Team
-- Built with [Tauri](https://tauri.app/)
+- Built with [Tauri](https://tauri.app/) - Lightweight desktop framework
 - UI powered by [React](https://react.dev/) + [Tailwind CSS](https://tailwindcss.com/)
 - Icons from [Lucide](https://lucide.dev/)
+- Testing with [Vitest](https://vitest.dev/) + [React Testing Library](https://testing-library.com/react)
 
 ---
 
 **Version**: 1.0.0  
 **Update Date**: 2025-10-23  
-**Tech Stack**: Tauri + Rust + React + TypeScript
+**Tech Stack**: Tauri 1.5 + Rust + React 18 + TypeScript + Vite
+
+**Key Dependencies**:
+- **Frontend**: React, React Router, Lucide Icons, date-fns
+- **Backend**: Rust, Tokio, Rusqlite, Reqwest, Serde
+- **Testing**: Vitest, React Testing Library, Cargo Test
+- **Build**: Vite, Tailwind CSS, TypeScript ESLint
 

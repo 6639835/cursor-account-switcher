@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { ask } from '@tauri-apps/api/dialog';
-import { Account, AccountInfo } from '../types';
+import { Account, AccountInfo, TokenInfo } from '../types';
 import {
   RefreshCw,
   Plus,
@@ -11,6 +11,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Key,
 } from 'lucide-react';
 
 interface AccountPageProps {
@@ -55,6 +56,10 @@ function AccountPage({
 }: AccountPageProps) {
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
+  const [showTokenImport, setShowTokenImport] = useState(false);
+  const [tokenInput, setTokenInput] = useState('');
+  const [tokenLoading, setTokenLoading] = useState(false);
+  const [tokenProgress, setTokenProgress] = useState('');
   const [, setNow] = useState(new Date());
 
   // Update the current time every second to make the relative time dynamic
@@ -150,6 +155,45 @@ function AccountPage({
     }
   };
 
+  const handleTokenImport = async () => {
+    try {
+      setTokenLoading(true);
+      setTokenProgress('Validating token...');
+
+      // Validate token
+      const tokenInfo = await invoke<TokenInfo>('validate_token', {
+        token: tokenInput.trim(),
+      });
+
+      if (!tokenInfo.is_valid) {
+        throw new Error('Invalid token format');
+      }
+
+      setTokenProgress(
+        'Converting token and fetching account info (this may take up to 2 minutes)...',
+      );
+
+      // Import account
+      const account = await invoke<Account>('import_from_token', {
+        token: tokenInput.trim(),
+      });
+
+      setTokenProgress('Account imported successfully!');
+
+      // Clean up and refresh
+      setShowTokenImport(false);
+      setTokenInput('');
+      onRefresh();
+
+      alert(`Account ${account.email} imported successfully!`);
+    } catch (err) {
+      alert(`Token import failed: ${err}`);
+    } finally {
+      setTokenLoading(false);
+      setTokenProgress('');
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     const lower = status.toLowerCase();
     if (lower === 'pro' || lower === 'ultra') {
@@ -192,9 +236,16 @@ function AccountPage({
             Import
           </button>
           <button
+            onClick={() => setShowTokenImport(!showTokenImport)}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+          >
+            <Key size={16} />
+            Import from Token
+          </button>
+          <button
             onClick={() => handleBatchUpdate()}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
           >
             <Upload size={16} />
             Update All
@@ -260,6 +311,65 @@ function AccountPage({
                 setImportText('');
               }}
               className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Token Import Modal */}
+      {showTokenImport && (
+        <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Import from Token</h3>
+          <p className="text-sm text-gray-600 mb-2">
+            <span className="font-medium">Import account using JWT or Session Token</span>
+          </p>
+          <p className="text-xs text-gray-500 mb-2">Supported token formats:</p>
+          <ul className="text-xs text-gray-500 mb-3 ml-4 space-y-1">
+            <li>
+              • JWT Token: <code className="bg-gray-100 px-1 rounded">eyJhbGciOiJSUzI1NiIs...</code>
+            </li>
+            <li>
+              • Session Token:{' '}
+              <code className="bg-gray-100 px-1 rounded">user_01234567::eyJhbGci...</code>
+            </li>
+          </ul>
+          <p className="text-xs text-gray-500 mb-4">
+            The system will automatically detect the token type and fetch account details from
+            Cursor API. This process may take up to 2 minutes.
+          </p>
+          <textarea
+            value={tokenInput}
+            onChange={(e) => setTokenInput(e.target.value)}
+            placeholder="Paste your JWT token or Session Token here..."
+            className="w-full h-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
+            disabled={tokenLoading}
+          />
+          {tokenLoading && tokenProgress && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2">
+                <RefreshCw size={16} className="animate-spin text-blue-600" />
+                <span className="text-sm text-blue-700">{tokenProgress}</span>
+              </div>
+            </div>
+          )}
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={handleTokenImport}
+              disabled={tokenLoading}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {tokenLoading ? 'Importing...' : 'Import'}
+            </button>
+            <button
+              onClick={() => {
+                setShowTokenImport(false);
+                setTokenInput('');
+                setTokenProgress('');
+              }}
+              disabled={tokenLoading}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
             >
               Cancel
             </button>

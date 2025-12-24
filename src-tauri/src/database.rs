@@ -72,6 +72,21 @@ impl Database {
 
         Ok(())
     }
+
+    pub fn get_session_token(&self) -> AnyhowResult<String> {
+        let conn = Connection::open(&self.path).context("Failed to open database")?;
+
+        // Get session token (cookie) from database
+        let session_token: String = conn
+            .query_row(
+                "SELECT value FROM ItemTable WHERE key = 'cursorAuth/sessionToken'",
+                [],
+                |row| row.get(0),
+            )
+            .context("Failed to get session token from database")?;
+
+        Ok(session_token)
+    }
 }
 
 #[cfg(test)]
