@@ -91,4 +91,35 @@ describe('SettingsPage Component', () => {
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
     expect(screen.getByRole('radio', { name: /dark/i })).toHaveAttribute('aria-checked', 'true');
   });
+
+  it('navigates theme options with arrow keys and wraps at the ends', async () => {
+    const user = userEvent.setup();
+    renderSettings();
+
+    const light = screen.getByRole('radio', { name: /light/i });
+    const dark = screen.getByRole('radio', { name: /dark/i });
+    const auto = screen.getByRole('radio', { name: /auto/i });
+
+    expect(auto).toHaveAttribute('tabIndex', '0');
+    expect(light).toHaveAttribute('tabIndex', '-1');
+    expect(dark).toHaveAttribute('tabIndex', '-1');
+
+    auto.focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(light).toHaveFocus();
+    expect(light).toHaveAttribute('aria-checked', 'true');
+    expect(light).toHaveAttribute('tabIndex', '0');
+    expect(auto).toHaveAttribute('tabIndex', '-1');
+
+    await user.keyboard('{ArrowLeft}');
+
+    expect(auto).toHaveFocus();
+    expect(auto).toHaveAttribute('aria-checked', 'true');
+
+    await user.keyboard('{ArrowUp}');
+
+    expect(dark).toHaveFocus();
+    expect(dark).toHaveAttribute('aria-checked', 'true');
+  });
 });

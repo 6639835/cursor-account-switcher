@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, type KeyboardEvent } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { ask } from '@tauri-apps/api/dialog';
 import {
@@ -21,17 +21,35 @@ const THEME_OPTIONS: { value: ThemePreference; label: string; icon: typeof Sun }
   { value: 'auto', label: 'Auto', icon: Monitor },
 ];
 
+/**
+ * Returns the adjacent theme option, wrapping at both ends of the group.
+ * @param current - Currently selected theme preference
+ * @param direction - `1` for next, `-1` for previous
+ */
+function adjacentTheme(current: ThemePreference, direction: 1 | -1): ThemePreference {
+  const index = THEME_OPTIONS.findIndex((option) => option.value === current);
+  const nextIndex = (index + direction + THEME_OPTIONS.length) % THEME_OPTIONS.length;
+  return THEME_OPTIONS[nextIndex].value;
+}
+
+/**
+ * Settings page for theme, Cursor paths, machine ID reset, and process control.
+ */
 function SettingsPage() {
   const [cursorPath, setCursorPath] = useState('');
   const [dataStoragePath, setDataStoragePath] = useState('');
   const [loading, setLoading] = useState(false);
   const { preference, setPreference } = useTheme();
+  const themeButtonRefs = useRef<Partial<Record<ThemePreference, HTMLButtonElement | null>>>({});
 
   useEffect(() => {
     detectPath();
     getStoragePath();
   }, []);
 
+  /**
+   * Detects the Cursor installation path and stores it in local state.
+   */
   const detectPath = async () => {
     try {
       const path = await invoke<string>('detect_cursor_path');
@@ -41,6 +59,9 @@ function SettingsPage() {
     }
   };
 
+  /**
+   * Loads the local directory used to persist imported accounts.
+   */
   const getStoragePath = async () => {
     try {
       const path = await invoke<string>('get_data_storage_path');
@@ -50,6 +71,9 @@ function SettingsPage() {
     }
   };
 
+  /**
+   * Confirms with the user, then resets Cursor's machine ID.
+   */
   const handleResetMachineId = async () => {
     const confirmed = await ask(
       'Are you sure you want to reset the machine ID? This will close Cursor.',
@@ -74,6 +98,9 @@ function SettingsPage() {
     }
   };
 
+  /**
+   * Confirms with the user, then terminates the Cursor process.
+   */
   const handleKillCursor = async () => {
     const confirmed = await ask('Are you sure you want to close Cursor?', {
       title: 'Confirm Kill',
@@ -92,6 +119,9 @@ function SettingsPage() {
     }
   };
 
+  /**
+   * Confirms with the user, then relaunches Cursor.
+   */
   const handleRestartCursor = async () => {
     const confirmed = await ask('Are you sure you want to restart Cursor?', {
       title: 'Confirm Restart',
@@ -136,10 +166,29 @@ function SettingsPage() {
             return (
               <button
                 key={option.value}
+                ref={(node) => {
+                  themeButtonRefs.current[option.value] = node;
+                }}
                 type="button"
                 role="radio"
                 aria-checked={selected}
+                tabIndex={selected ? 0 : -1}
                 onClick={() => setPreference(option.value)}
+                onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+                  let direction: 1 | -1 | null = null;
+                  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                    direction = 1;
+                  } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                    direction = -1;
+                  }
+                  if (direction === null) {
+                    return;
+                  }
+                  event.preventDefault();
+                  const next = adjacentTheme(option.value, direction);
+                  setPreference(next);
+                  themeButtonRefs.current[next]?.focus();
+                }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   selected ? 'bg-selected text-fg shadow-sm' : 'text-muted hover:text-fg'
                 }`}

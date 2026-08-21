@@ -65,7 +65,7 @@ html.dark {
   --ui-input-border: 53 53 53;
   --ui-code: 24 24 24;
   --ui-fg: 240 240 240;
-  --ui-muted: 98 98 98;
+  --ui-muted: 136 136 136;
   --ui-selected: 55 55 55;
   --ui-selected-fg: 240 240 240;
   --ui-accent: 240 240 240;
@@ -73,7 +73,7 @@ html.dark {
   --ui-secondary: 55 55 55;
   --ui-secondary-hover: 53 53 53;
   --ui-ring: 98 98 98;
-  --ui-icon: 98 98 98;
+  --ui-icon: 136 136 136;
   --ui-success: 74 222 128;
   --ui-success-fg: 134 239 172;
   --ui-success-bg: 5 46 22;

@@ -19,6 +19,9 @@ const ThemeContext = createContext<{
   setPreference: (preference: ThemePreference) => void;
 } | null>(null);
 
+/**
+ * Reads the persisted theme preference, defaulting to `auto`.
+ */
 function readStoredPreference(): ThemePreference {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
@@ -31,6 +34,9 @@ function readStoredPreference(): ThemePreference {
   return 'auto';
 }
 
+/**
+ * Returns whether the OS currently prefers a dark color scheme.
+ */
 function getSystemPrefersDark(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return false;
@@ -38,6 +44,11 @@ function getSystemPrefersDark(): boolean {
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
+/**
+ * Resolves a stored preference into the light or dark theme actually applied.
+ * @param preference - User preference (`light`, `dark`, or `auto`)
+ * @param systemPrefersDark - Whether the OS currently prefers dark mode
+ */
 export function resolveTheme(
   preference: ThemePreference,
   systemPrefersDark = getSystemPrefersDark(),
@@ -48,12 +59,19 @@ export function resolveTheme(
   return preference;
 }
 
+/**
+ * Applies the resolved theme to `document.documentElement`.
+ * @param resolved - Theme after resolving `auto` against system preference
+ */
 export function applyResolvedTheme(resolved: ResolvedTheme): void {
   const root = document.documentElement;
   root.classList.toggle('dark', resolved === 'dark');
   root.style.colorScheme = resolved;
 }
 
+/**
+ * Provides theme preference and resolved light/dark values to the app tree.
+ */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [preference, setPreferenceState] = useState<ThemePreference>(readStoredPreference);
   const [systemPrefersDark, setSystemPrefersDark] = useState(getSystemPrefersDark);
@@ -98,6 +116,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
+/**
+ * Accesses the current theme preference and setter.
+ * @throws If used outside of `ThemeProvider`
+ */
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {

@@ -13,6 +13,9 @@ interface HomePageProps {
   onRefresh: () => void;
 }
 
+/**
+ * Formats a timestamp as a short relative string such as "3 minutes ago".
+ */
 function formatRelativeTime(date: Date | null): string {
   if (!date) return 'Never';
 

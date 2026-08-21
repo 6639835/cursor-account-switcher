@@ -177,6 +177,17 @@ fn batch_add_accounts(state: State<AppState>, accounts: Vec<Account>) -> Result<
     Ok(())
 }
 
+/// Switches Cursor to another account, then relaunches the editor.
+///
+/// # Arguments
+/// * `email` - Account email to activate
+/// * `access_token` - Access token for the account
+/// * `refresh_token` - Refresh token for the account
+/// * `reset_machine` - Whether to reset the machine ID during the switch
+///
+/// # Returns
+/// * `Ok(())` if the switch (and relaunch) succeeded
+/// * `Err` with a message if Cursor could not be stopped, credentials could not be written, or Cursor could not be relaunched
 #[tauri::command]
 fn switch_account(
     state: State<AppState>,
@@ -240,11 +251,16 @@ fn reset_machine_id(state: State<AppState>) -> Result<(), String> {
     })
 }
 
+/// Terminates the Cursor editor process if it is running.
 #[tauri::command]
 fn kill_cursor_process() -> Result<(), String> {
     ProcessManager::kill_cursor().map_err(|e| e.to_string())
 }
 
+/// Relaunches the Cursor editor.
+///
+/// # Arguments
+/// * `cursor_app_path` - Optional path to the Cursor application
 #[tauri::command]
 fn restart_cursor_process(cursor_app_path: Option<String>) -> Result<(), String> {
     ProcessManager::restart_cursor(cursor_app_path).map_err(|e| e.to_string())
