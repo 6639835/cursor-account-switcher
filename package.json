@@ -9,6 +9,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
     "sync-version": "node scripts/sync-version.js",
     "version": "npm run sync-version && git add -A",
     "release": "node scripts/release.js",
