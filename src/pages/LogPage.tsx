@@ -77,16 +77,16 @@ function LogPage() {
   const getLevelColor = (level: string) => {
     switch (level.toUpperCase()) {
       case 'ERROR':
-        return 'text-red-600 bg-red-50';
+        return 'text-danger-fg bg-danger-bg';
       case 'WARNING':
       case 'WARN':
-        return 'text-yellow-600 bg-yellow-50';
+        return 'text-warning-fg bg-warning-bg';
       case 'INFO':
-        return 'text-blue-600 bg-blue-50';
+        return 'text-info-fg bg-info-bg';
       case 'DEBUG':
-        return 'text-gray-600 bg-gray-50';
+        return 'text-fg bg-code';
       default:
-        return 'text-gray-600 bg-gray-50';
+        return 'text-fg bg-code';
     }
   };
 
@@ -94,11 +94,10 @@ function LogPage() {
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Application Logs</h2>
+          <h2 className="text-2xl font-bold text-fg">Application Logs</h2>
           {logFilePath && (
-            <p className="text-sm text-gray-500 mt-1">
-              Log file:{' '}
-              <code className="text-xs bg-gray-100 px-2 py-0.5 rounded">{logFilePath}</code>
+            <p className="text-sm text-muted mt-1">
+              Log file: <code className="text-xs bg-code px-2 py-0.5 rounded">{logFilePath}</code>
             </p>
           )}
         </div>
@@ -128,20 +127,20 @@ function LogPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-4 bg-gray-50 border-b border-gray-200">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+      <div className="bg-panel rounded-lg shadow-sm border border-border overflow-hidden">
+        <div className="p-4 bg-input border-b border-border">
+          <div className="flex items-center gap-2 text-sm text-muted">
             <FileText size={16} />
             <span>Recent Activity</span>
           </div>
         </div>
 
-        <div className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
+        <div className="divide-y divide-border max-h-[600px] overflow-y-auto">
           {logs.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">No logs available</div>
+            <div className="p-8 text-center text-muted">No logs available</div>
           ) : (
             logs.map((log, index) => (
-              <div key={index} className="p-4 hover:bg-gray-50 transition-colors">
+              <div key={index} className="p-4 hover:bg-hover transition-colors">
                 <div className="flex items-start gap-3">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLevelColor(
@@ -151,8 +150,8 @@ function LogPage() {
                     {log.level}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900">{log.message}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-sm text-fg">{log.message}</p>
+                    <p className="text-xs text-muted mt-1">
                       {new Date(log.timestamp).toLocaleString()}
                     </p>
                   </div>
@@ -163,8 +162,8 @@ function LogPage() {
         </div>
       </div>
 
-      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-800">
+      <div className="mt-4 p-4 bg-info-bg border border-info-border rounded-lg">
+        <p className="text-sm text-info-fg">
           <strong>Tip:</strong> Logs are automatically generated as you use the application. They
           can help diagnose issues if something goes wrong.
         </p>

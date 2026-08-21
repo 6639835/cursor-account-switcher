@@ -1,13 +1,31 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { ask } from '@tauri-apps/api/dialog';
-import { Folder, RotateCcw, Power, PlayCircle, Info } from 'lucide-react';
+import {
+  Folder,
+  RotateCcw,
+  Power,
+  PlayCircle,
+  Info,
+  Sun,
+  Moon,
+  Monitor,
+  Palette,
+} from 'lucide-react';
 import { APP_VERSION } from '../version';
+import { useTheme, type ThemePreference } from '../theme';
+
+const THEME_OPTIONS: { value: ThemePreference; label: string; icon: typeof Sun }[] = [
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'auto', label: 'Auto', icon: Monitor },
+];
 
 function SettingsPage() {
   const [cursorPath, setCursorPath] = useState('');
   const [dataStoragePath, setDataStoragePath] = useState('');
   const [loading, setLoading] = useState(false);
+  const { preference, setPreference } = useTheme();
 
   useEffect(() => {
     detectPath();
@@ -94,18 +112,56 @@ function SettingsPage() {
 
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Settings</h2>
+      <h2 className="text-2xl font-bold text-fg mb-6">Settings</h2>
+
+      {/* Appearance */}
+      <div className="bg-panel rounded-lg shadow-sm border border-border p-6 mb-6">
+        <h3 className="text-lg font-semibold text-fg mb-4 flex items-center gap-2">
+          <Palette size={20} />
+          Appearance
+        </h3>
+
+        <p className="text-sm text-muted mb-4">
+          Choose a light or dark theme, or follow your system preference.
+        </p>
+
+        <div
+          role="radiogroup"
+          aria-label="Theme"
+          className="inline-flex rounded-lg border border-border p-1 bg-canvas"
+        >
+          {THEME_OPTIONS.map((option) => {
+            const Icon = option.icon;
+            const selected = preference === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setPreference(option.value)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  selected ? 'bg-selected text-fg shadow-sm' : 'text-muted hover:text-fg'
+                }`}
+              >
+                <Icon size={16} />
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* System Information */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+      <div className="bg-panel rounded-lg shadow-sm border border-border p-6 mb-6">
+        <h3 className="text-lg font-semibold text-fg mb-4 flex items-center gap-2">
           <Info size={20} />
           System Information
         </h3>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-fg mb-2">
               Cursor Installation Path
             </label>
             <div className="flex items-center gap-2">
@@ -113,7 +169,7 @@ function SettingsPage() {
                 type="text"
                 value={cursorPath}
                 readOnly
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                className="flex-1 px-4 py-2 border border-input-border rounded-lg bg-input text-fg"
               />
               <button
                 onClick={detectPath}
@@ -123,40 +179,38 @@ function SettingsPage() {
                 Detect
               </button>
             </div>
-            <p className="mt-2 text-sm text-gray-500">Auto-detected Cursor globalStorage path</p>
+            <p className="mt-2 text-sm text-muted">Auto-detected Cursor globalStorage path</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Database Path</label>
+            <label className="block text-sm font-medium text-fg mb-2">Database Path</label>
             <input
               type="text"
               value={cursorPath ? `${cursorPath}/state.vscdb` : ''}
               readOnly
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+              className="w-full px-4 py-2 border border-input-border rounded-lg bg-input text-fg"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Storage Path</label>
+            <label className="block text-sm font-medium text-fg mb-2">Storage Path</label>
             <input
               type="text"
               value={cursorPath ? `${cursorPath}/storage.json` : ''}
               readOnly
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+              className="w-full px-4 py-2 border border-input-border rounded-lg bg-input text-fg"
             />
           </div>
 
-          <div className="pt-4 border-t border-gray-200">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Account Data Storage
-            </label>
+          <div className="pt-4 border-t border-border">
+            <label className="block text-sm font-medium text-fg mb-2">Account Data Storage</label>
             <input
               type="text"
               value={dataStoragePath}
               readOnly
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 font-mono text-sm"
+              className="w-full px-4 py-2 border border-input-border rounded-lg bg-input text-fg font-mono text-sm"
             />
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-muted">
               Your imported accounts are stored here (persists across app updates)
             </p>
           </div>
@@ -164,13 +218,13 @@ function SettingsPage() {
       </div>
 
       {/* Machine ID Management */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+      <div className="bg-panel rounded-lg shadow-sm border border-border p-6 mb-6">
+        <h3 className="text-lg font-semibold text-fg mb-4 flex items-center gap-2">
           <RotateCcw size={20} />
           Machine ID Management
         </h3>
 
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-muted mb-4">
           Resetting the machine ID can help when switching accounts. This will modify the system
           registry (Windows) or configuration files (Mac/Linux) and close Cursor.
         </p>
@@ -184,8 +238,8 @@ function SettingsPage() {
           {loading ? 'Resetting...' : 'Reset Machine ID'}
         </button>
 
-        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800">
+        <div className="mt-4 p-4 bg-warning-bg border border-warning-border rounded-lg">
+          <p className="text-sm text-warning-fg">
             <strong>Note:</strong> On Windows, this operation may require administrator privileges.
             Cursor will be automatically closed during this process.
           </p>
@@ -193,8 +247,8 @@ function SettingsPage() {
       </div>
 
       {/* Process Management */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+      <div className="bg-panel rounded-lg shadow-sm border border-border p-6">
+        <h3 className="text-lg font-semibold text-fg mb-4 flex items-center gap-2">
           <Power size={20} />
           Process Management
         </h3>
@@ -217,19 +271,19 @@ function SettingsPage() {
           </button>
         </div>
 
-        <p className="mt-4 text-sm text-gray-500">
+        <p className="mt-4 text-sm text-muted">
           Use these controls to manually manage the Cursor application process.
         </p>
       </div>
 
       {/* About */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h4 className="font-semibold text-gray-800 mb-2">About</h4>
-        <p className="text-sm text-gray-600">
+      <div className="mt-6 p-4 bg-panel rounded-lg border border-border">
+        <h4 className="font-semibold text-fg mb-2">About</h4>
+        <p className="text-sm text-muted">
           <strong>Cursor Account Switcher</strong> - Version {APP_VERSION}
         </p>
-        <p className="text-sm text-gray-600 mt-1">Built with Tauri + React + Rust</p>
-        <p className="text-sm text-gray-500 mt-2">
+        <p className="text-sm text-muted mt-1">Built with Tauri + React + Rust</p>
+        <p className="text-sm text-muted mt-2">
           Cross-platform account management tool for Cursor AI Editor
         </p>
       </div>

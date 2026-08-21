@@ -76,9 +76,9 @@ function HomePage({
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
+          <h2 className="text-2xl font-bold text-fg">Dashboard</h2>
           {lastRefreshTime && (
-            <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+            <div className="flex items-center gap-2 mt-1 text-sm text-muted">
               <Clock size={14} />
               <span>Last updated: {formatRelativeTime(lastRefreshTime)}</span>
             </div>
@@ -96,30 +96,30 @@ function HomePage({
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+        <div className="mb-6 p-4 bg-danger-bg border border-danger-border rounded-lg text-danger-fg">
           {error}
         </div>
       )}
 
       {/* Account Info Card */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Current Account</h3>
+      <div className="bg-panel rounded-lg shadow-sm border border-border p-6 mb-6">
+        <h3 className="text-lg font-semibold text-fg mb-4">Current Account</h3>
 
         {accountInfo ? (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <User className="text-blue-600" size={20} />
+              <User className="text-icon" size={20} />
               <div>
-                <p className="text-sm text-gray-500">Email</p>
-                <p className="font-medium text-gray-800">{accountInfo.email}</p>
+                <p className="text-sm text-muted">Email</p>
+                <p className="font-medium text-fg">{accountInfo.email}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <TrendingUp className="text-green-600" size={20} />
+              <TrendingUp className="text-icon" size={20} />
               <div>
-                <p className="text-sm text-gray-500">Account Type</p>
-                <p className="font-medium text-gray-800 capitalize">
+                <p className="text-sm text-muted">Account Type</p>
+                <p className="font-medium text-fg capitalize">
                   {accountInfo.membership_type}
                   {accountInfo.is_student && ' (Student)'}
                 </p>
@@ -127,12 +127,12 @@ function HomePage({
             </div>
 
             <div className="flex items-center gap-3">
-              <Calendar className="text-purple-600" size={20} />
+              <Calendar className="text-icon" size={20} />
               <div>
-                <p className="text-sm text-gray-500">Days Remaining</p>
-                <p className="font-medium text-gray-800">
+                <p className="text-sm text-muted">Days Remaining</p>
+                <p className="font-medium text-fg">
                   {accountInfo.days_remaining < 0 ? (
-                    <span className="text-gray-400 italic">—</span>
+                    <span className="text-muted italic">—</span>
                   ) : (
                     `${accountInfo.days_remaining.toFixed(1)} days`
                   )}
@@ -141,32 +141,32 @@ function HomePage({
             </div>
           </div>
         ) : (
-          <p className="text-gray-500">Loading account information...</p>
+          <p className="text-muted">Loading account information...</p>
         )}
       </div>
 
       {/* Usage Info Card */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Usage Statistics</h3>
+      <div className="bg-panel rounded-lg shadow-sm border border-border p-6 mb-6">
+        <h3 className="text-lg font-semibold text-fg mb-4">Usage Statistics</h3>
 
         {usageInfo ? (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <DollarSign className="text-blue-600" size={20} />
+              <DollarSign className="text-icon" size={20} />
               <div className="flex-1">
-                <p className="text-sm text-gray-500">Quota Usage</p>
+                <p className="text-sm text-muted">Quota Usage</p>
                 <div className="mt-2">
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">
+                    <span className="text-muted">
                       {usageInfo.used.toFixed(2)} / {usageInfo.total_quota.toFixed(2)}
                     </span>
-                    <span className="font-medium text-gray-800">
+                    <span className="font-medium text-fg">
                       {usageInfo.usage_percentage.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div className="w-full bg-track rounded-full h-2.5">
                     <div
-                      className="bg-blue-600 h-2.5 rounded-full transition-all"
+                      className="bg-accent h-2.5 rounded-full transition-all"
                       style={{ width: `${Math.min(usageInfo.usage_percentage, 100)}%` }}
                     />
                   </div>
@@ -174,27 +174,27 @@ function HomePage({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
               <div>
-                <p className="text-sm text-gray-500">Used</p>
-                <p className="text-lg font-semibold text-gray-800">${usageInfo.used.toFixed(2)}</p>
+                <p className="text-sm text-muted">Used</p>
+                <p className="text-lg font-semibold text-fg">${usageInfo.used.toFixed(2)}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Remaining</p>
-                <p className="text-lg font-semibold text-green-600">
+                <p className="text-sm text-muted">Remaining</p>
+                <p className="text-lg font-semibold text-success">
                   ${usageInfo.remaining.toFixed(2)}
                 </p>
               </div>
             </div>
           </div>
         ) : (
-          <p className="text-gray-500">Loading usage information...</p>
+          <p className="text-muted">Loading usage information...</p>
         )}
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+      <div className="bg-panel rounded-lg shadow-sm border border-border p-6">
+        <h3 className="text-lg font-semibold text-fg mb-4">Quick Actions</h3>
 
         <button
           onClick={handleResetMachineId}

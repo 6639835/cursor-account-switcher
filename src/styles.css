@@ -8,13 +8,93 @@
   font-weight: 400;
 
   color-scheme: light;
-  color: #213547;
-  background-color: #ffffff;
+  --ui-canvas: 249 250 251;
+  --ui-surface: 255 255 255;
+  --ui-panel: 255 255 255;
+  --ui-hover: 243 244 246;
+  --ui-border: 229 231 235;
+  --ui-input: 249 250 251;
+  --ui-input-border: 209 213 219;
+  --ui-code: 243 244 246;
+  --ui-fg: 31 41 55;
+  --ui-muted: 107 114 128;
+  --ui-selected: 239 246 255;
+  --ui-selected-fg: 37 99 235;
+  --ui-accent: 37 99 235;
+  --ui-track: 229 231 235;
+  --ui-secondary: 229 231 235;
+  --ui-secondary-hover: 209 213 219;
+  --ui-ring: 59 130 246;
+  --ui-icon: 37 99 235;
+  --ui-success: 22 163 74;
+  --ui-success-fg: 21 128 61;
+  --ui-success-bg: 240 253 244;
+  --ui-success-border: 187 247 208;
+  --ui-danger: 220 38 38;
+  --ui-danger-fg: 185 28 28;
+  --ui-danger-bg: 254 242 242;
+  --ui-danger-border: 254 202 202;
+  --ui-warning-fg: 161 98 7;
+  --ui-warning-bg: 254 252 232;
+  --ui-warning-border: 254 240 138;
+  --ui-caution-fg: 234 88 12;
+  --ui-caution-bg: 255 247 237;
+  --ui-special-fg: 147 51 234;
+  --ui-special-bg: 250 245 255;
+  --ui-info-fg: 29 78 216;
+  --ui-info-bg: 239 246 255;
+  --ui-info-border: 191 219 254;
+
+  color: rgb(var(--ui-fg));
+  background-color: rgb(var(--ui-canvas));
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html.dark {
+  color-scheme: dark;
+  --ui-canvas: 20 20 20;
+  --ui-surface: 24 24 24;
+  --ui-panel: 31 31 31;
+  --ui-hover: 55 55 55;
+  --ui-border: 53 53 53;
+  --ui-input: 24 24 24;
+  --ui-input-border: 53 53 53;
+  --ui-code: 24 24 24;
+  --ui-fg: 240 240 240;
+  --ui-muted: 98 98 98;
+  --ui-selected: 55 55 55;
+  --ui-selected-fg: 240 240 240;
+  --ui-accent: 240 240 240;
+  --ui-track: 55 55 55;
+  --ui-secondary: 55 55 55;
+  --ui-secondary-hover: 53 53 53;
+  --ui-ring: 98 98 98;
+  --ui-icon: 98 98 98;
+  --ui-success: 74 222 128;
+  --ui-success-fg: 134 239 172;
+  --ui-success-bg: 5 46 22;
+  --ui-success-border: 22 101 52;
+  --ui-danger: 248 113 113;
+  --ui-danger-fg: 252 165 165;
+  --ui-danger-bg: 69 10 10;
+  --ui-danger-border: 153 27 27;
+  --ui-warning-fg: 253 224 71;
+  --ui-warning-bg: 66 32 6;
+  --ui-warning-border: 133 77 14;
+  --ui-caution-fg: 251 146 60;
+  --ui-caution-bg: 67 20 7;
+  --ui-special-fg: 192 132 252;
+  --ui-special-bg: 46 16 64;
+  --ui-info-fg: 240 240 240;
+  --ui-info-bg: 55 55 55;
+  --ui-info-border: 53 53 53;
+
+  color: rgb(var(--ui-fg));
+  background-color: rgb(var(--ui-canvas));
 }
 
 body {
@@ -39,7 +119,7 @@ body {
 }
 
 *:hover {
-  scrollbar-color: #888 #f1f1f1;
+  scrollbar-color: rgb(var(--ui-muted)) rgb(var(--ui-panel));
 }
 
 ::-webkit-scrollbar {
@@ -57,14 +137,14 @@ body {
 }
 
 *:hover::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: rgb(var(--ui-panel));
 }
 
 *:hover::-webkit-scrollbar-thumb {
-  background: #888;
+  background: rgb(var(--ui-border));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: rgb(var(--ui-muted));
 }

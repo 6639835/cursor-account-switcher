@@ -1,16 +1,51 @@
 /** @type {import('tailwindcss').Config} */
+const ui = (name) => `rgb(var(--ui-${name}) / <alpha-value>)`;
+
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
         primary: '#0078D4',
-      }
+        canvas: ui('canvas'),
+        surface: ui('surface'),
+        panel: ui('panel'),
+        hover: ui('hover'),
+        border: ui('border'),
+        fg: ui('fg'),
+        muted: ui('muted'),
+        input: ui('input'),
+        'input-border': ui('input-border'),
+        code: ui('code'),
+        selected: ui('selected'),
+        'selected-fg': ui('selected-fg'),
+        accent: ui('accent'),
+        track: ui('track'),
+        secondary: ui('secondary'),
+        'secondary-hover': ui('secondary-hover'),
+        ring: ui('ring'),
+        icon: ui('icon'),
+        success: ui('success'),
+        'success-fg': ui('success-fg'),
+        'success-bg': ui('success-bg'),
+        'success-border': ui('success-border'),
+        danger: ui('danger'),
+        'danger-fg': ui('danger-fg'),
+        'danger-bg': ui('danger-bg'),
+        'danger-border': ui('danger-border'),
+        'warning-fg': ui('warning-fg'),
+        'warning-bg': ui('warning-bg'),
+        'warning-border': ui('warning-border'),
+        'caution-fg': ui('caution-fg'),
+        'caution-bg': ui('caution-bg'),
+        'special-fg': ui('special-fg'),
+        'special-bg': ui('special-bg'),
+        'info-fg': ui('info-fg'),
+        'info-bg': ui('info-bg'),
+        'info-border': ui('info-border'),
+      },
     },
   },
   plugins: [],
-}
-
+};

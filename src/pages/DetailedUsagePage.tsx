@@ -88,12 +88,12 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
 
   const renderUsageEvents = () => {
     if (!usageEvents || !usageEvents.events) {
-      return <div className="text-center py-12 text-gray-500">No usage events available</div>;
+      return <div className="text-center py-12 text-muted">No usage events available</div>;
     }
 
     const events = usageEvents.events;
     if (events.length === 0) {
-      return <div className="text-center py-12 text-gray-500">No usage events found</div>;
+      return <div className="text-center py-12 text-muted">No usage events found</div>;
     }
 
     return (
@@ -101,22 +101,22 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
         {events.slice(0, 20).map((event: UsageEvent, idx: number) => (
           <div
             key={idx}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+            className="bg-panel border border-border rounded-lg p-4 hover:shadow-md transition-shadow"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <Activity size={16} className="text-blue-500" />
-                  <span className="font-medium text-gray-900">
+                  <Activity size={16} className="text-icon" />
+                  <span className="font-medium text-fg">
                     {event.model || event.type || 'Usage Event'}
                   </span>
                   {event.cost && (
-                    <span className="ml-auto text-sm font-semibold text-green-600">
+                    <span className="ml-auto text-sm font-semibold text-success">
                       {formatCurrency(event.cost)}
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                <div className="grid grid-cols-2 gap-2 text-sm text-muted">
                   {event.timestamp && (
                     <div>
                       <span className="font-medium">Time:</span> {formatDate(event.timestamp)}
@@ -139,12 +139,12 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
                   )}
                 </div>
               </div>
-              <ChevronRight size={16} className="text-gray-400 mt-1" />
+              <ChevronRight size={16} className="text-muted mt-1" />
             </div>
           </div>
         ))}
         {events.length > 20 && (
-          <div className="text-center text-sm text-gray-500 pt-4">
+          <div className="text-center text-sm text-muted pt-4">
             Showing 20 of {events.length} events
           </div>
         )}
@@ -155,9 +155,7 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
   const renderBillingCycle = () => {
     if (!billingCycle) {
       return (
-        <div className="text-center py-12 text-gray-500">
-          No billing cycle information available
-        </div>
+        <div className="text-center py-12 text-muted">No billing cycle information available</div>
       );
     }
 
@@ -170,21 +168,21 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Billing Period */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="bg-panel border border-border rounded-lg p-6">
             <div className="flex items-center gap-3 mb-4">
-              <Calendar className="text-blue-500" size={24} />
-              <h3 className="text-lg font-semibold text-gray-800">Billing Period</h3>
+              <Calendar className="text-icon" size={24} />
+              <h3 className="text-lg font-semibold text-fg">Billing Period</h3>
             </div>
             <div className="space-y-3">
               <div>
-                <div className="text-sm text-gray-500">Start Date</div>
-                <div className="text-lg font-medium text-gray-900">
+                <div className="text-sm text-muted">Start Date</div>
+                <div className="text-lg font-medium text-fg">
                   {formatDate(billingCycle.start_date)}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">End Date</div>
-                <div className="text-lg font-medium text-gray-900">
+                <div className="text-sm text-muted">End Date</div>
+                <div className="text-lg font-medium text-fg">
                   {formatDate(billingCycle.end_date)}
                 </div>
               </div>
@@ -192,26 +190,26 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
           </div>
 
           {/* Usage Stats */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="bg-panel border border-border rounded-lg p-6">
             <div className="flex items-center gap-3 mb-4">
-              <TrendingUp className="text-green-500" size={24} />
-              <h3 className="text-lg font-semibold text-gray-800">Usage Statistics</h3>
+              <TrendingUp className="text-icon" size={24} />
+              <h3 className="text-lg font-semibold text-fg">Usage Statistics</h3>
             </div>
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-500">Current Usage</span>
-                  <span className="font-medium text-gray-900">
+                  <span className="text-muted">Current Usage</span>
+                  <span className="font-medium text-fg">
                     {formatCurrency(billingCycle.usage)} / {formatCurrency(billingCycle.limit)}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div className="w-full bg-track rounded-full h-2.5">
                   <div
-                    className="bg-blue-600 h-2.5 rounded-full transition-all"
+                    className="bg-accent h-2.5 rounded-full transition-all"
                     style={{ width: `${Math.min(usagePercentage, 100)}%` }}
                   />
                 </div>
-                <div className="text-xs text-gray-500 mt-1">{usagePercentage.toFixed(1)}% used</div>
+                <div className="text-xs text-muted mt-1">{usagePercentage.toFixed(1)}% used</div>
               </div>
             </div>
           </div>
@@ -219,38 +217,36 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
 
         {/* User Info */}
         {userInfo && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="bg-panel border border-border rounded-lg p-6">
             <div className="flex items-center gap-3 mb-4">
-              <User className="text-purple-500" size={24} />
-              <h3 className="text-lg font-semibold text-gray-800">Account Information</h3>
+              <User className="text-icon" size={24} />
+              <h3 className="text-lg font-semibold text-fg">Account Information</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {userInfo.email && (
                 <div>
-                  <div className="text-sm text-gray-500">Email</div>
-                  <div className="text-base font-medium text-gray-900">{userInfo.email}</div>
+                  <div className="text-sm text-muted">Email</div>
+                  <div className="text-base font-medium text-fg">{userInfo.email}</div>
                 </div>
               )}
               {userInfo.user_id && (
                 <div>
-                  <div className="text-sm text-gray-500">User ID</div>
-                  <div className="text-base font-medium text-gray-900 font-mono text-xs">
+                  <div className="text-sm text-muted">User ID</div>
+                  <div className="text-base font-medium text-fg font-mono text-xs">
                     {userInfo.user_id}
                   </div>
                 </div>
               )}
               {userInfo.membership_type && (
                 <div>
-                  <div className="text-sm text-gray-500">Membership Type</div>
-                  <div className="text-base font-medium text-gray-900">
-                    {userInfo.membership_type}
-                  </div>
+                  <div className="text-sm text-muted">Membership Type</div>
+                  <div className="text-base font-medium text-fg">{userInfo.membership_type}</div>
                 </div>
               )}
               {userInfo.subscription_status && (
                 <div>
-                  <div className="text-sm text-gray-500">Subscription Status</div>
-                  <div className="text-base font-medium text-gray-900">
+                  <div className="text-sm text-muted">Subscription Status</div>
+                  <div className="text-base font-medium text-fg">
                     {userInfo.subscription_status}
                   </div>
                 </div>
@@ -264,12 +260,12 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
 
   const renderInvoices = () => {
     if (!invoices || !invoices.invoices) {
-      return <div className="text-center py-12 text-gray-500">No invoice data available</div>;
+      return <div className="text-center py-12 text-muted">No invoice data available</div>;
     }
 
     const invoiceList = invoices.invoices;
     if (invoiceList.length === 0) {
-      return <div className="text-center py-12 text-gray-500">No invoices found</div>;
+      return <div className="text-center py-12 text-muted">No invoices found</div>;
     }
 
     return (
@@ -277,32 +273,32 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
         {invoiceList.map((invoice: Invoice, idx: number) => (
           <div
             key={idx}
-            className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow"
+            className="bg-panel border border-border rounded-lg p-5 hover:shadow-md transition-shadow"
           >
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-4 flex-1">
-                <CreditCard className="text-indigo-500 mt-1" size={20} />
+                <CreditCard className="text-icon mt-1" size={20} />
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-fg">
                       Invoice #{invoice.id || invoice.number || idx + 1}
                     </span>
                     <span
                       className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         invoice.status === 'paid'
-                          ? 'bg-green-50 text-green-700'
+                          ? 'bg-success-bg text-success-fg'
                           : invoice.status === 'pending'
-                            ? 'bg-yellow-50 text-yellow-700'
-                            : 'bg-gray-50 text-gray-700'
+                            ? 'bg-warning-bg text-warning-fg'
+                            : 'bg-code text-fg'
                       }`}
                     >
                       {invoice.status || 'Unknown'}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-600">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-muted">
                     <div>
                       <span className="font-medium">Amount:</span>{' '}
-                      <span className="text-gray-900 font-semibold">
+                      <span className="text-fg font-semibold">
                         {formatCurrency(invoice.amount)}
                       </span>
                     </div>
@@ -337,8 +333,8 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Detailed Usage & Billing</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="text-2xl font-bold text-fg">Detailed Usage & Billing</h2>
+          <p className="text-sm text-muted mt-1">
             View your usage events, billing cycle, and invoice history
           </p>
         </div>
@@ -353,20 +349,20 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
       </div>
 
       {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <div className="mb-6 bg-danger-bg border border-danger-border text-danger-fg px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
 
       {/* Tabs */}
-      <div className="mb-6 border-b border-gray-200">
+      <div className="mb-6 border-b border-border">
         <nav className="flex gap-4">
           <button
             onClick={() => setActiveTab('usage')}
             className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors ${
               activeTab === 'usage'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-selected-fg text-selected-fg'
+                : 'border-transparent text-muted hover:text-fg'
             }`}
           >
             <Activity size={18} />
@@ -376,8 +372,8 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
             onClick={() => setActiveTab('billing')}
             className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors ${
               activeTab === 'billing'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-selected-fg text-selected-fg'
+                : 'border-transparent text-muted hover:text-fg'
             }`}
           >
             <DollarSign size={18} />
@@ -387,8 +383,8 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
             onClick={() => setActiveTab('invoices')}
             className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors ${
               activeTab === 'invoices'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-selected-fg text-selected-fg'
+                : 'border-transparent text-muted hover:text-fg'
             }`}
           >
             <FileText size={18} />
@@ -400,8 +396,8 @@ function DetailedUsagePage({ onRefresh }: DetailedUsagePageProps) {
       {/* Tab Content */}
       {loading ? (
         <div className="text-center py-12">
-          <RefreshCw size={32} className="animate-spin text-blue-500 mx-auto mb-3" />
-          <p className="text-gray-500">Loading data...</p>
+          <RefreshCw size={32} className="animate-spin text-icon mx-auto mb-3" />
+          <p className="text-muted">Loading data...</p>
         </div>
       ) : (
         <div>

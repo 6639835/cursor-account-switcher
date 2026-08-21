@@ -8,6 +8,7 @@ import LogPage from './pages/LogPage';
 import DetailedUsagePage from './pages/DetailedUsagePage';
 import { APP_VERSION } from './version';
 import { AccountInfo, UsageInfo, Account } from './types';
+import { ThemeProvider } from './theme';
 
 type TabType = 'home' | 'accounts' | 'detailed-usage' | 'logs' | 'settings';
 
@@ -193,70 +194,72 @@ function App() {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-800">Cursor Switcher</h1>
-          <p className="text-sm text-gray-500 mt-1">Account Manager</p>
+    <ThemeProvider>
+      <div className="flex h-screen bg-canvas">
+        {/* Sidebar */}
+        <div className="w-64 bg-surface border-r border-border flex flex-col">
+          <div className="p-6 border-b border-border">
+            <h1 className="text-xl font-bold text-fg">Cursor Switcher</h1>
+            <p className="text-sm text-muted mt-1">Account Manager</p>
+          </div>
+
+          <nav className="flex-1 p-4">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setCurrentTab(tab.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
+                    currentTab === tab.id
+                      ? 'bg-selected text-selected-fg'
+                      : 'text-muted hover:bg-hover'
+                  }`}
+                >
+                  <Icon size={20} />
+                  <span className="font-medium">{tab.name}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="p-4 border-t border-border">
+            <p className="text-xs text-muted">Version {APP_VERSION}</p>
+          </div>
         </div>
 
-        <nav className="flex-1 p-4">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setCurrentTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
-                  currentTab === tab.id
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <Icon size={20} />
-                <span className="font-medium">{tab.name}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="p-4 border-t border-gray-200">
-          <p className="text-xs text-gray-500">Version {APP_VERSION}</p>
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto">
+          {currentTab === 'home' && (
+            <HomePage
+              accountInfo={accountInfo}
+              usageInfo={usageInfo}
+              loading={loading}
+              error={error}
+              lastRefreshTime={lastRefreshTime}
+              onRefresh={() => loadAccountInfo(true)}
+            />
+          )}
+          {currentTab === 'accounts' && (
+            <AccountPage
+              accountInfo={accountInfo}
+              accounts={accounts}
+              loading={accountsLoading}
+              lastRefreshTime={accountsLastRefreshTime}
+              onRefresh={() => loadAccounts(true)}
+              onAccountsUpdate={setAccounts}
+              onRefreshTimeUpdate={setAccountsLastRefreshTime}
+              onRefreshHome={() => loadAccountInfo(true)}
+            />
+          )}
+          {currentTab === 'detailed-usage' && (
+            <DetailedUsagePage onRefresh={() => loadAccountInfo(true)} />
+          )}
+          {currentTab === 'settings' && <SettingsPage />}
+          {currentTab === 'logs' && <LogPage />}
         </div>
       </div>
-
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {currentTab === 'home' && (
-          <HomePage
-            accountInfo={accountInfo}
-            usageInfo={usageInfo}
-            loading={loading}
-            error={error}
-            lastRefreshTime={lastRefreshTime}
-            onRefresh={() => loadAccountInfo(true)}
-          />
-        )}
-        {currentTab === 'accounts' && (
-          <AccountPage
-            accountInfo={accountInfo}
-            accounts={accounts}
-            loading={accountsLoading}
-            lastRefreshTime={accountsLastRefreshTime}
-            onRefresh={() => loadAccounts(true)}
-            onAccountsUpdate={setAccounts}
-            onRefreshTimeUpdate={setAccountsLastRefreshTime}
-            onRefreshHome={() => loadAccountInfo(true)}
-          />
-        )}
-        {currentTab === 'detailed-usage' && (
-          <DetailedUsagePage onRefresh={() => loadAccountInfo(true)} />
-        )}
-        {currentTab === 'settings' && <SettingsPage />}
-        {currentTab === 'logs' && <LogPage />}
-      </div>
-    </div>
+    </ThemeProvider>
   );
 }
 
