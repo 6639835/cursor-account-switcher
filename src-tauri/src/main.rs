@@ -691,11 +691,7 @@ fn update_tray_menu(app: &tauri::AppHandle) {
 
 fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
     match event {
-        SystemTrayEvent::LeftClick {
-            position: _,
-            size: _,
-            ..
-        } => {
+        SystemTrayEvent::LeftClick { .. } => {
             // Left-click: Toggle window visibility (no menu)
             if let Some(window) = app.get_window("main") {
                 if window.is_visible().unwrap_or(false) {
@@ -707,11 +703,7 @@ fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
                 }
             }
         }
-        SystemTrayEvent::RightClick {
-            position: _,
-            size: _,
-            ..
-        } => {
+        SystemTrayEvent::RightClick { .. } => {
             // Right-click: Show menu only (no window popup)
             // The menu will show automatically, nothing to do here
         }
