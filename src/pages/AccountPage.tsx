@@ -97,10 +97,13 @@ function AccountPage({
       return;
     }
 
-    const confirmed = await ask(`Switch to account ${account.email}?`, {
+    const confirmed = await ask(
+      `Switch to account ${account.email}? Cursor will close and reopen automatically.`,
+      {
       title: 'Confirm Switch',
       type: 'info',
-    });
+      },
+    );
 
     if (!confirmed) {
       return;
@@ -113,7 +116,6 @@ function AccountPage({
         refreshToken: account.refresh_token,
         resetMachine: true,
       });
-      alert('Account switched successfully! Cursor has been closed. Please restart it.');
 
       // Auto-refresh after account switch
       setTimeout(() => {

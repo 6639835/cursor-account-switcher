@@ -189,7 +189,7 @@ fn switch_account(
     let cursor_path = state.cursor_base_path.lock().unwrap();
     let base_path = cursor_path.as_ref().ok_or("Cursor path not set")?.clone();
 
-    // Kill Cursor process
+    // Kill Cursor process (waits until it has fully exited)
     tracing::info!("Killing Cursor process");
     ProcessManager::kill_cursor().map_err(|e| {
         tracing::error!("Failed to kill Cursor process: {}", e);
@@ -216,6 +216,12 @@ fn switch_account(
             format!("Machine ID reset failed: {}", e)
         })?;
     }
+
+    tracing::info!("Reopening Cursor");
+    ProcessManager::restart_cursor(None).map_err(|e| {
+        tracing::error!("Account switched but failed to reopen Cursor: {}", e);
+        format!("Account switched, but failed to reopen Cursor: {}", e)
+    })?;
 
     tracing::info!("Account switch completed successfully");
     Ok(())
