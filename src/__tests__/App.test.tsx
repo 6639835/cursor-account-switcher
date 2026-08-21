@@ -55,15 +55,15 @@ describe('App Component', () => {
     // Find the Accounts tab button
     const accountsTab = screen.getByRole('button', { name: /accounts/i });
 
-    // Initially should not have blue background (Home tab is active)
-    expect(accountsTab).not.toHaveClass('bg-blue-50');
+    // Initially should not have selected background (Home tab is active)
+    expect(accountsTab).not.toHaveClass('bg-selected');
 
     await user.click(accountsTab);
 
-    // After clicking, should have blue background
+    // After clicking, should have selected styles
     await waitFor(() => {
-      expect(accountsTab).toHaveClass('bg-blue-50');
-      expect(accountsTab).toHaveClass('text-blue-600');
+      expect(accountsTab).toHaveClass('bg-selected');
+      expect(accountsTab).toHaveClass('text-selected-fg');
     });
 
     // Verify we're on the accounts page

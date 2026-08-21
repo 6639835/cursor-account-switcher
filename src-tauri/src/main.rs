@@ -177,6 +177,17 @@ fn batch_add_accounts(state: State<AppState>, accounts: Vec<Account>) -> Result<
     Ok(())
 }
 
+/// Switches Cursor to another account, then relaunches the editor.
+///
+/// # Arguments
+/// * `email` - Account email to activate
+/// * `access_token` - Access token for the account
+/// * `refresh_token` - Refresh token for the account
+/// * `reset_machine` - Whether to reset the machine ID during the switch
+///
+/// # Returns
+/// * `Ok(())` if the switch (and relaunch) succeeded
+/// * `Err` with a message if Cursor could not be stopped, credentials could not be written, or Cursor could not be relaunched
 #[tauri::command]
 fn switch_account(
     state: State<AppState>,
@@ -189,7 +200,7 @@ fn switch_account(
     let cursor_path = state.cursor_base_path.lock().unwrap();
     let base_path = cursor_path.as_ref().ok_or("Cursor path not set")?.clone();
 
-    // Kill Cursor process
+    // Kill Cursor process (waits until it has fully exited)
     tracing::info!("Killing Cursor process");
     ProcessManager::kill_cursor().map_err(|e| {
         tracing::error!("Failed to kill Cursor process: {}", e);
@@ -217,6 +228,12 @@ fn switch_account(
         })?;
     }
 
+    tracing::info!("Reopening Cursor");
+    ProcessManager::restart_cursor(None).map_err(|e| {
+        tracing::error!("Account switched but failed to reopen Cursor: {}", e);
+        format!("Account switched, but failed to reopen Cursor: {}", e)
+    })?;
+
     tracing::info!("Account switch completed successfully");
     Ok(())
 }
@@ -234,11 +251,16 @@ fn reset_machine_id(state: State<AppState>) -> Result<(), String> {
     })
 }
 
+/// Terminates the Cursor editor process if it is running.
 #[tauri::command]
 fn kill_cursor_process() -> Result<(), String> {
     ProcessManager::kill_cursor().map_err(|e| e.to_string())
 }
 
+/// Relaunches the Cursor editor.
+///
+/// # Arguments
+/// * `cursor_app_path` - Optional path to the Cursor application
 #[tauri::command]
 fn restart_cursor_process(cursor_app_path: Option<String>) -> Result<(), String> {
     ProcessManager::restart_cursor(cursor_app_path).map_err(|e| e.to_string())
@@ -685,11 +707,7 @@ fn update_tray_menu(app: &tauri::AppHandle) {
 
 fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
     match event {
-        SystemTrayEvent::LeftClick {
-            position: _,
-            size: _,
-            ..
-        } => {
+        SystemTrayEvent::LeftClick { .. } => {
             // Left-click: Toggle window visibility (no menu)
             if let Some(window) = app.get_window("main") {
                 if window.is_visible().unwrap_or(false) {
@@ -701,11 +719,7 @@ fn handle_system_tray_event(app: &tauri::AppHandle, event: SystemTrayEvent) {
                 }
             }
         }
-        SystemTrayEvent::RightClick {
-            position: _,
-            size: _,
-            ..
-        } => {
+        SystemTrayEvent::RightClick { .. } => {
             // Right-click: Show menu only (no window popup)
             // The menu will show automatically, nothing to do here
         }

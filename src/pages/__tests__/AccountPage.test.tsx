@@ -230,7 +230,7 @@ describe('AccountPage Component', () => {
 
     renderAccountPage();
 
-    const importButton = screen.getByRole('button', { name: /import/i });
+    const importButton = screen.getByRole('button', { name: /^import$/i });
     await user.click(importButton);
 
     await waitFor(() => {
@@ -250,7 +250,7 @@ describe('AccountPage Component', () => {
     renderAccountPage();
 
     // Click the "Import" button to show the import modal
-    const importButton = screen.getAllByRole('button', { name: /import/i })[0];
+    const importButton = screen.getByRole('button', { name: /^import$/i });
     await user.click(importButton);
 
     // Fill in the textarea
@@ -258,9 +258,9 @@ describe('AccountPage Component', () => {
     await user.clear(textarea);
     await user.type(textarea, importText);
 
-    // Click the "Import" button inside the modal (not "Confirm")
-    const submitButton = screen.getAllByRole('button', { name: /import/i })[1];
-    await user.click(submitButton);
+    // Click the "Import" button inside the modal
+    const submitButtons = screen.getAllByRole('button', { name: /^import$/i });
+    await user.click(submitButtons[submitButtons.length - 1]);
 
     await waitFor(() => {
       expect(global.mockInvoke).toHaveBeenCalledWith('import_accounts', { text: importText });

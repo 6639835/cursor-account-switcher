@@ -25,6 +25,9 @@ interface AccountPageProps {
   onRefreshHome: () => void;
 }
 
+/**
+ * Formats a timestamp as a short relative string such as "3 minutes ago".
+ */
 function formatRelativeTime(date: Date | null): string {
   if (!date) return 'Never';
 
@@ -97,10 +100,13 @@ function AccountPage({
       return;
     }
 
-    const confirmed = await ask(`Switch to account ${account.email}?`, {
-      title: 'Confirm Switch',
-      type: 'info',
-    });
+    const confirmed = await ask(
+      `Switch to account ${account.email}? Cursor will close and reopen automatically.`,
+      {
+        title: 'Confirm Switch',
+        type: 'info',
+      },
+    );
 
     if (!confirmed) {
       return;
@@ -113,7 +119,6 @@ function AccountPage({
         refreshToken: account.refresh_token,
         resetMachine: true,
       });
-      alert('Account switched successfully! Cursor has been closed. Please restart it.');
 
       // Auto-refresh after account switch
       setTimeout(() => {
@@ -197,31 +202,31 @@ function AccountPage({
   const getStatusIcon = (status: string) => {
     const lower = status.toLowerCase();
     if (lower === 'pro' || lower === 'ultra') {
-      return <CheckCircle className="text-green-500" size={16} />;
+      return <CheckCircle className="text-success" size={16} />;
     } else if (lower === 'free') {
-      return <XCircle className="text-gray-400" size={16} />;
+      return <XCircle className="text-muted" size={16} />;
     } else if (lower === 'used') {
-      return <Clock className="text-orange-500" size={16} />;
+      return <Clock className="text-caution-fg" size={16} />;
     }
-    return <Clock className="text-gray-400" size={16} />;
+    return <Clock className="text-muted" size={16} />;
   };
 
   const getStatusColor = (status: string) => {
     const lower = status.toLowerCase();
-    if (lower === 'pro') return 'text-green-600 bg-green-50';
-    if (lower === 'ultra') return 'text-purple-600 bg-purple-50';
-    if (lower === 'free') return 'text-gray-600 bg-gray-50';
-    if (lower === 'used') return 'text-orange-600 bg-orange-50';
-    return 'text-gray-600 bg-gray-50';
+    if (lower === 'pro') return 'text-success-fg bg-success-bg';
+    if (lower === 'ultra') return 'text-special-fg bg-special-bg';
+    if (lower === 'free') return 'text-fg bg-code';
+    if (lower === 'used') return 'text-caution-fg bg-caution-bg';
+    return 'text-fg bg-code';
   };
 
   return (
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Account Management</h2>
+          <h2 className="text-2xl font-bold text-fg">Account Management</h2>
           {lastRefreshTime && (
-            <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+            <div className="flex items-center gap-2 mt-1 text-sm text-muted">
               <Clock size={14} />
               <span>Last updated: {formatRelativeTime(lastRefreshTime)}</span>
             </div>
@@ -263,32 +268,31 @@ function AccountPage({
 
       {/* Import Modal */}
       {showImport && (
-        <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Import Accounts</h3>
-          <p className="text-sm text-gray-600 mb-2">
+        <div className="mb-6 bg-panel rounded-lg shadow-sm border border-border p-6">
+          <h3 className="text-lg font-semibold text-fg mb-4">Import Accounts</h3>
+          <p className="text-sm text-muted mb-2">
             <span className="font-medium">Auto-Detection Enabled!</span> Paste your account info in
             any format.
           </p>
-          <p className="text-xs text-gray-500 mb-2">Supported formats:</p>
-          <ul className="text-xs text-gray-500 mb-3 ml-4 space-y-1">
+          <p className="text-xs text-muted mb-2">Supported formats:</p>
+          <ul className="text-xs text-muted mb-3 ml-4 space-y-1">
             <li>
-              • CSV:{' '}
-              <code className="bg-gray-100 px-1 rounded">email,accessToken,sessionToken</code>
+              • CSV: <code className="bg-code px-1 rounded">email,accessToken,sessionToken</code>
             </li>
             <li>
               • Chinese brackets:{' '}
-              <code className="bg-gray-100 px-1 rounded">【email：...】【accessToken：...】</code>
+              <code className="bg-code px-1 rounded">【email：...】【accessToken：...】</code>
             </li>
             <li>
               • Plain text:{' '}
-              <code className="bg-gray-100 px-1 rounded">email@domain.com eyJhbGc...</code>
+              <code className="bg-code px-1 rounded">email@domain.com eyJhbGc...</code>
             </li>
             <li>
-              • Labeled: <code className="bg-gray-100 px-1 rounded">email: xxx, token: xxx</code>
+              • Labeled: <code className="bg-code px-1 rounded">email: xxx, token: xxx</code>
             </li>
             <li>• JSON and more!</li>
           </ul>
-          <p className="text-xs text-gray-500 mb-4">
+          <p className="text-xs text-muted mb-4">
             Enter one account per line. SessionToken is optional and will be auto-detected if
             present.
           </p>
@@ -296,7 +300,7 @@ function AccountPage({
             value={importText}
             onChange={(e) => setImportText(e.target.value)}
             placeholder="Paste your account info here in any format...&#10;Example: user@example.com,eyJhbGc...&#10;Or: 【email：user@example.com】【accessToken：eyJhbGc...】"
-            className="w-full h-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+            className="w-full h-32 px-4 py-2 border border-input-border rounded-lg bg-surface text-fg focus:ring-2 focus:ring-ring focus:border-transparent font-mono text-sm"
           />
           <div className="flex gap-2 mt-4">
             <button
@@ -310,7 +314,7 @@ function AccountPage({
                 setShowImport(false);
                 setImportText('');
               }}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              className="px-4 py-2 bg-secondary text-fg rounded-lg hover:bg-secondary-hover"
             >
               Cancel
             </button>
@@ -320,22 +324,22 @@ function AccountPage({
 
       {/* Token Import Modal */}
       {showTokenImport && (
-        <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Import from Token</h3>
-          <p className="text-sm text-gray-600 mb-2">
+        <div className="mb-6 bg-panel rounded-lg shadow-sm border border-border p-6">
+          <h3 className="text-lg font-semibold text-fg mb-4">Import from Token</h3>
+          <p className="text-sm text-muted mb-2">
             <span className="font-medium">Import account using JWT or Session Token</span>
           </p>
-          <p className="text-xs text-gray-500 mb-2">Supported token formats:</p>
-          <ul className="text-xs text-gray-500 mb-3 ml-4 space-y-1">
+          <p className="text-xs text-muted mb-2">Supported token formats:</p>
+          <ul className="text-xs text-muted mb-3 ml-4 space-y-1">
             <li>
-              • JWT Token: <code className="bg-gray-100 px-1 rounded">eyJhbGciOiJSUzI1NiIs...</code>
+              • JWT Token: <code className="bg-code px-1 rounded">eyJhbGciOiJSUzI1NiIs...</code>
             </li>
             <li>
               • Session Token:{' '}
-              <code className="bg-gray-100 px-1 rounded">user_01234567::eyJhbGci...</code>
+              <code className="bg-code px-1 rounded">user_01234567::eyJhbGci...</code>
             </li>
           </ul>
-          <p className="text-xs text-gray-500 mb-4">
+          <p className="text-xs text-muted mb-4">
             The system will automatically detect the token type and fetch account details from
             Cursor API. This process may take up to 2 minutes.
           </p>
@@ -343,14 +347,14 @@ function AccountPage({
             value={tokenInput}
             onChange={(e) => setTokenInput(e.target.value)}
             placeholder="Paste your JWT token or Session Token here..."
-            className="w-full h-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
+            className="w-full h-32 px-4 py-2 border border-input-border rounded-lg bg-surface text-fg focus:ring-2 focus:ring-ring focus:border-transparent font-mono text-sm"
             disabled={tokenLoading}
           />
           {tokenLoading && tokenProgress && (
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="mt-3 p-3 bg-info-bg border border-info-border rounded-lg">
               <div className="flex items-center gap-2">
-                <RefreshCw size={16} className="animate-spin text-blue-600" />
-                <span className="text-sm text-blue-700">{tokenProgress}</span>
+                <RefreshCw size={16} className="animate-spin text-fg" />
+                <span className="text-sm text-fg">{tokenProgress}</span>
               </div>
             </div>
           )}
@@ -369,7 +373,7 @@ function AccountPage({
                 setTokenProgress('');
               }}
               disabled={tokenLoading}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+              className="px-4 py-2 bg-secondary text-fg rounded-lg hover:bg-secondary-hover disabled:opacity-50"
             >
               Cancel
             </button>
@@ -378,47 +382,47 @@ function AccountPage({
       )}
 
       {/* Accounts Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-panel rounded-lg shadow-sm border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-input border-b border-border">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                   #
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                   Days Left
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                   Usage Statistics
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-panel divide-y divide-border">
               {accounts.map((account) => (
-                <tr key={account.email} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <tr key={account.email} className="hover:bg-hover">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
                     {account.index}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-fg">
                     <div className="flex items-center gap-2">
                       <span>{account.email}</span>
                       {accountInfo && accountInfo.email === account.email && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-green-700 bg-green-100 border border-green-200">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-success-fg bg-success-bg border border-success-border">
                           Active
                         </span>
                       )}
                       {account.source === 'web_login' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-info-fg bg-info-bg border border-info-border">
                           Web Login
                         </span>
                       )}
@@ -432,47 +436,47 @@ function AccountPage({
                       {account.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
                     {account.days_remaining === 'N/A' || account.days_remaining === '-1.0' ? (
-                      <span className="text-gray-400 italic">—</span>
+                      <span className="text-muted italic">—</span>
                     ) : (
                       account.days_remaining
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
                     {account.usage_used !== undefined && account.usage_total !== undefined ? (
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-600">
+                          <span className="text-xs text-muted">
                             ${account.usage_used.toFixed(2)} / ${account.usage_total.toFixed(2)}
                           </span>
-                          <span className="text-xs font-medium text-gray-800">
+                          <span className="text-xs font-medium text-fg">
                             {account.usage_percentage?.toFixed(1)}%
                           </span>
                         </div>
-                        <div className="w-24 bg-gray-200 rounded-full h-1.5">
+                        <div className="w-24 bg-track rounded-full h-1.5">
                           <div
-                            className="bg-blue-600 h-1.5 rounded-full transition-all"
+                            className="bg-accent h-1.5 rounded-full transition-all"
                             style={{ width: `${Math.min(account.usage_percentage || 0, 100)}%` }}
                           />
                         </div>
                       </div>
                     ) : (
-                      <span className="text-gray-400 italic">—</span>
+                      <span className="text-muted italic">—</span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleSwitch(account)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-selected-fg hover:text-fg"
                         title="Switch to this account"
                       >
                         <RotateCcw size={16} />
                       </button>
                       <button
                         onClick={() => handleDelete(account.email)}
-                        className="text-red-600 hover:text-red-900"
+                        className="text-danger-fg hover:opacity-80"
                         title="Delete account"
                       >
                         <Trash2 size={16} />
@@ -485,14 +489,14 @@ function AccountPage({
           </table>
 
           {accounts.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-muted">
               No accounts found. Click &quot;Import&quot; to add accounts.
             </div>
           )}
         </div>
       </div>
 
-      <div className="mt-4 text-sm text-gray-500">Total: {accounts.length} account(s)</div>
+      <div className="mt-4 text-sm text-muted">Total: {accounts.length} account(s)</div>
     </div>
   );
 }

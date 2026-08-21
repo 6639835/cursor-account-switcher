@@ -1,22 +1,33 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import SettingsPage from '../SettingsPage';
+import { ThemeProvider, THEME_STORAGE_KEY } from '../../theme';
 
 // Mock Tauri dialog API
 vi.mock('@tauri-apps/api/dialog', () => ({
   confirm: vi.fn(),
 }));
 
+function renderSettings() {
+  return render(
+    <ThemeProvider>
+      <SettingsPage />
+    </ThemeProvider>,
+  );
+}
+
 describe('SettingsPage Component', () => {
   beforeEach(async () => {
     global.mockInvoke.mockReset();
+    global.mockInvoke.mockResolvedValue('');
     window.alert = vi.fn();
     const { confirm } = await import('@tauri-apps/api/dialog');
     vi.mocked(confirm).mockResolvedValue(true);
   });
 
   it('should render settings page title', () => {
-    render(<SettingsPage />);
+    renderSettings();
     expect(screen.getByText(/settings/i)).toBeInTheDocument();
   });
 
@@ -24,7 +35,7 @@ describe('SettingsPage Component', () => {
     const mockPath = '/test/cursor/path';
     global.mockInvoke.mockResolvedValue(mockPath);
 
-    render(<SettingsPage />);
+    renderSettings();
 
     await waitFor(() => {
       expect(global.mockInvoke).toHaveBeenCalledWith('detect_cursor_path');
@@ -41,7 +52,7 @@ describe('SettingsPage Component', () => {
       return Promise.resolve('');
     });
 
-    render(<SettingsPage />);
+    renderSettings();
 
     await waitFor(() => {
       const inputs = screen.getAllByDisplayValue(mockPath);
@@ -53,12 +64,62 @@ describe('SettingsPage Component', () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     global.mockInvoke.mockRejectedValue(new Error('Path not found'));
 
-    render(<SettingsPage />);
+    renderSettings();
 
     await waitFor(() => {
       expect(consoleErrorSpy).toHaveBeenCalled();
     });
 
     consoleErrorSpy.mockRestore();
+  });
+
+  it('should render light, dark, and auto theme options', () => {
+    renderSettings();
+
+    expect(screen.getByRole('radio', { name: /light/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /dark/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /auto/i })).toBeInTheDocument();
+  });
+
+  it('should apply dark theme and persist the preference', async () => {
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.click(screen.getByRole('radio', { name: /dark/i }));
+
+    expect(document.documentElement).toHaveClass('dark');
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
+    expect(screen.getByRole('radio', { name: /dark/i })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('navigates theme options with arrow keys and wraps at the ends', async () => {
+    const user = userEvent.setup();
+    renderSettings();
+
+    const light = screen.getByRole('radio', { name: /light/i });
+    const dark = screen.getByRole('radio', { name: /dark/i });
+    const auto = screen.getByRole('radio', { name: /auto/i });
+
+    expect(auto).toHaveAttribute('tabIndex', '0');
+    expect(light).toHaveAttribute('tabIndex', '-1');
+    expect(dark).toHaveAttribute('tabIndex', '-1');
+
+    auto.focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(light).toHaveFocus();
+    expect(light).toHaveAttribute('aria-checked', 'true');
+    expect(light).toHaveAttribute('tabIndex', '0');
+    expect(auto).toHaveAttribute('tabIndex', '-1');
+
+    await user.keyboard('{ArrowLeft}');
+
+    expect(auto).toHaveFocus();
+    expect(auto).toHaveAttribute('aria-checked', 'true');
+
+    await user.keyboard('{ArrowUp}');
+
+    expect(dark).toHaveFocus();
+    expect(dark).toHaveAttribute('aria-checked', 'true');
   });
 });
